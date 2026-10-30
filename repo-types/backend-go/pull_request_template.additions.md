@@ -1,0 +1,2 @@
+- [ ] `{{CONTRACT_PATH}}` updated first; route/contract sync test green
+- [ ] Integration tests include authorization denial for each data path

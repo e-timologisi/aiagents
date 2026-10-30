@@ -1,0 +1,49 @@
+# Dossier: <repo or module>
+
+Scope: <repo/module> at <sha>   Depth: overview | deep   Date: <date>
+Evidence tags: [verified] ran/observed · [read-from-code] path:line · [inferred] reasoned
+Branch claims name branch + base branch + hashes (e.g. `feat/x @ab12cd3 vs origin/main @ef45ab6: 3 ahead, 0 behind`). Counts come from the files (`wc -l`, `git ls-files | wc -l`).
+
+## What it is
+<Purpose, users, main capabilities.> [tag]
+
+## Architecture
+<Components, runtimes, external services, configuration by env var NAME.> [tag]
+
+## Key flows
+### <Flow name>
+1. <step> — `path:line` [tag]
+```mermaid
+sequenceDiagram
+  participant U as User
+```
+
+## Data model & tenancy
+<Main entities, ownership/tenant boundaries, how authorization scopes data.> [tag]
+
+## Delivery
+| Item | Value | Evidence |
+|---|---|---|
+| Build | | |
+| Test | | |
+| CI/CD jobs and gating | | |
+| Environments | | |
+| Release | | |
+
+## Health
+<Tests (areas, gaps), dependencies (age, known vulnerabilities), tech debt.> [tag]
+
+## Security findings
+| Severity | Finding | Location | Suggested fix |
+|---|---|---|---|
+<Secrets: location and kind only, never values. History check (only if approved): pattern kind, count, first/last commit date.>
+
+## Docs vs code
+| Docs say | Code does | Evidence |
+|---|---|---|
+
+## Top 3 blocking questions (the lead asks them one at a time)
+1. <question> — recommended: <answer> — options: <A/B> — would be answered by <what>
+
+## Later
+- <question> — default if not answered: <default>

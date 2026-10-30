@@ -1,0 +1,3 @@
+## PostgreSQL infrastructure (pack: postgres-infra)
+
+Do not inspect or modify servers until identities and approved read-only access are confirmed. Before any installation, use `server-inspector` and `postgres-architect`. Approval is mandatory for every change (access, firewall, TLS, packages, services, data, credentials, deployment). Never expose TCP 5432 publicly by default; prefer private networking plus native TLS and restricted clients. Preserve services already running on shared hosts. Rules: `docs/rules/postgresql-infrastructure.md`. Independent security and restore validation before go-live.

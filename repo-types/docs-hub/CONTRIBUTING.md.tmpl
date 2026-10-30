@@ -1,0 +1,8 @@
+# Contributing to {{REPO_NAME}}
+
+- Read `docs/onboarding.md` and `AGENTS.md` first.
+- Branch from `{{DEFAULT_BRANCH}}`, open a PR; never push to `{{DEFAULT_BRANCH}}`.
+- Decisions: open a `decision` issue, then an ADR from `docs/adr/template.md`.
+- New terms → `GLOSSARY.md`. Ownership/routing changes → `docs/architecture/service-map.md`.
+- Agents: edit `agents/<name>.md`, run `python3 scripts/sync-agents.py`, commit generated files; CI runs `--check`.
+- No secrets, credentials or personal data anywhere in this repo.

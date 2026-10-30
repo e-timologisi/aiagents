@@ -1,0 +1,13 @@
+## This repository: {{REPO_NAME}} (backend, {{STACK}})
+
+Architecture and decisions live in `{{ORG}}/{{DOCS_REPO}}`; clone it next to this repo (`../{{DOCS_REPO}}`).
+
+- Owns business logic, the database schema and migrations, authorization enforcement and the API contract. It is the only component that connects to the database.
+- Database credentials exist only in the runtime environment of the deployed service (written by the deploy job from CI environment secrets). Never in this repo, CI logs, chat or AI prompts. Never connect to staging/production databases from CI runners or laptops.
+- **Contract first.** `{{CONTRACT_PATH}}` is the API contract for every consumer. Change it before the handler; a test should fail if served routes and contract drift. Business endpoints under `{{API_PREFIX}}/...`; errors as RFC 9457 `application/problem+json`.
+- **Where code goes:** `cmd/<binary>` (wiring), domain logic in `internal/<domain>/`, migrations in `{{MIGRATIONS_DIR}}/NNNN_name.sql`.
+- Migrations: forward-only, backward compatible with the running release (expand → migrate → contract across releases).
+- Explicit Go error handling; no panics for control flow. Table-driven unit tests; integration tests against a throwaway database (e.g. testcontainers-go); authorization-denial tests for every data path.
+- Logs never contain secrets or personal data.
+- Skills: `add-endpoint`, `add-migration` plus the core skills.
+- **Before finishing:** `{{LINT_CMD}}`, `{{TEST_CMD}}`, `{{INTEGRATION_CMD}}`.

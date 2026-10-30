@@ -1,0 +1,14 @@
+## This repository: {{REPO_NAME}} (frontend, {{STACK}})
+
+Architecture and decisions live in `{{ORG}}/{{DOCS_REPO}}`; clone it next to this repo (`../{{DOCS_REPO}}`).
+
+- Talks **only** to the backend API (`{{BACKEND_REPO}}`). Never connects to a database and never holds database credentials.
+- No secrets in the frontend: nothing secret in `NEXT_PUBLIC_*` variables, build args, images or client bundles.
+- No business, tax or pricing calculations in the browser; display what the API returns.
+- Owner/tenant context comes from the authenticated session via the API; never trust an id chosen in the browser.
+- TypeScript strict; no `any`.
+- **Contract first:** data shapes come from `{{API_CONTRACT}}`. Never invent endpoints; if one is missing, the API change lands first.
+- Pages: `app/<segment>/page.tsx` (+ `loading.tsx`, `error.tsx`) as server components fetching the API server-side via `{{API_URL_ENV}}`. `app/api/` only for UI route handlers (health, same-origin proxy).
+- UI languages: {{UI_LANGUAGES}}; terms from `../{{DOCS_REPO}}/GLOSSARY.md`.
+- Skills: `add-page`, `consume-api` plus the core skills.
+- **Before finishing:** `{{LINT_CMD}}`, `{{INTEGRATION_CMD}}`, `{{TEST_CMD}}`, `{{BUILD_CMD}}`.

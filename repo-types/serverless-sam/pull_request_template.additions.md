@@ -1,0 +1,2 @@
+- [ ] IAM scoped to exact resources; no VPC/database access; log retention set
+- [ ] Lifecycle rules only on temporary prefixes

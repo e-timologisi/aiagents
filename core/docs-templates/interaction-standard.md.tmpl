@@ -1,0 +1,46 @@
+# Interaction standard: how agents ask the owner
+
+Every {{PROJECT_NAME}} agent that needs input from the owner follows these rules. The owner may be non-technical.
+
+## Rules
+1. **One question per turn.** At most two if they are tightly coupled (e.g. "which provider?" and "which region of it?"). Never send the whole interview at once.
+2. **Every question carries**: a recommended answer (with one line why), 2–4 concrete options, and "other". Each option has a one-line plain-language consequence.
+3. **Use the structured question tool** when the harness has one:
+   - OpenCode: the `question` tool (header, prompt, choices; a free-form answer is always possible).
+   - VS Code (Local harness): `vscode/askQuestions` (interactive controls). Not available inside subagents.
+   - Otherwise: one plain chat message with one question, then wait.
+4. **Check before asking.** Never ask what the documents, the repo or earlier answers already say. State what you inferred ("The spec says staff log in with e-mail, so I assume…") and ask only to confirm if it matters.
+5. **Most blocking first.** Order questions by how much they block progress. Nice-to-have questions come last, or are skipped with a stated default.
+6. **Adapt.** Choose the next question based on the last answer; drop questions that became irrelevant.
+7. **Running summary.** After every 3–5 answers, print a short summary of decisions so far and ask "Is this right?" (one question).
+8. **Shortcuts.** Accept "go with your suggestions" (take every recommended answer for the current topic), "skip", "later", "recommend for me". Record the default taken in the question queue of `docs/project-state.md`.
+9. **Plain language.** No jargon; if a term is unavoidable, explain it in a few words.
+10. **Subagents cannot chat.** When running as a subagent and a decision is needed, stop and return ONE question with a recommended answer and options instead of guessing.
+
+## Question format
+```
+<Question in one sentence>
+Recommended: <option> — <why, one line>
+  A) <option> — <consequence>
+  B) <option> — <consequence>
+  C) <option> — <consequence>
+  Other: tell me in your words
+(You can also say "recommend for me", "skip" or "later".)
+```
+
+## Example turns
+```
+Agent: Who will sign in to the app in version 1?
+       Recommended: A — fewer privacy duties and a faster start.
+         A) Only salon staff — customers book without an account
+         B) Staff and customers — customers can see their bookings, more work
+         Other: tell me
+Owner: A
+Agent: Should each salon see only its own bookings?
+       Recommended: A — required if several salons use the same app.
+         A) Yes, strictly separated
+         B) No, one salon only for now
+Owner: recommend for me
+Agent: Taking A (recorded as default). Next: …
+Agent (after 4 answers): So far: staff-only login; salons separated; English and Greek; no online payment. Is this right?
+```

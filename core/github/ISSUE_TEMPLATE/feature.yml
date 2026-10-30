@@ -1,0 +1,81 @@
+name: Feature / task
+description: A change to {{PROJECT_NAME}} behaviour, possibly across repos. See docs/agents/ticket-standard.md.
+title: "[feature] "
+labels: ["needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Route the work with `docs/architecture/service-map.md` in {{DOCS_REPO}}. Never paste secrets, credentials or personal data here.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: One or two sentences — what outcome, and why.
+    validations:
+      required: true
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User story
+      placeholder: As a <role>, I want <capability>, so that <benefit>.
+    validations:
+      required: true
+  - type: textarea
+    id: repos
+    attributes:
+      label: Affected repos
+      description: In the change order of the service map (e.g. docs decision → backend → frontend → jobs → docs).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Numbered, testable. Include an authorization-denial case if data is touched.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data / contract impact
+      description: New tables/fields, migrations (expand/contract), API contract changes. Write "none" if none.
+    validations:
+      required: true
+  - type: textarea
+    id: domain-legal
+    attributes:
+      label: Domain / legal impact
+      description: Rules affected? Mark interpretations "to be validated by an expert". No invented figures. Write "none" if none.
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Docs to update
+      description: README/CONTRIBUTING, ADR, GLOSSARY, runbooks, etc. Write "none" if none.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and open questions
+      description: Any open decision blocks ready-for-agent.
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Definition of ready
+      options:
+        - label: Every field above is filled (or explicitly "none")
+        - label: No open decision; required ADRs are accepted or linked
+        - label: Affected repos and change order are clear
+        - label: No secrets or personal data in this issue

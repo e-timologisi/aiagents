@@ -1,0 +1,4 @@
+name: aws-serverless-cost
+description: AWS cost and least-privilege rules for serverless workloads
+defaults:
+descriptions:

@@ -1,0 +1,6 @@
+name: postgres-infra
+description: Gated, approval-driven PostgreSQL server planning, deployment and independent security review (no server specifics)
+defaults:
+  INFRA_DOCS: docs/infrastructure
+descriptions:
+  INFRA_DOCS: Folder with server audit, deployment plan, security plan and runbooks (in the docs hub)

@@ -1,0 +1,13 @@
+## This repository: {{REPO_NAME}} (side jobs, {{STACK}})
+
+Architecture and decisions live in `{{ORG}}/{{DOCS_REPO}}`; clone it next to this repo (`../{{DOCS_REPO}}`).
+
+- Side jobs only: file generation, exports, schedulers, object storage. The core API does not run here.
+- Functions run **without VPC/NAT** unless an ADR says otherwise and **never connect to the database**; they call the backend (`{{BACKEND_REPO}}`) via `{{API_URL_ENV}}` when they need data.
+- Do not assume free tiers last; every stack has budgets/alerts and log retention set.
+- arm64 where supported; least-privilege IAM per function, scoped to exact resources; CI authenticates with OIDC, no long-lived cloud keys.
+- Object storage: encryption on, public access blocked. Lifecycle expiry only on explicitly temporary prefixes; **never** on records that must be retained.
+- Secrets: created by the owner in a secret store; functions receive only the secret **name**; never in templates, parameters, logs or chat.
+- Mock external/government endpoints in tests.
+- Skills: `add-lambda`, `add-schedule`, `s3-storage` plus the core skills.
+- **Commands:** `{{TEST_CMD}}`, `{{LINT_CMD}}`, `{{INTEGRATION_CMD}}`, `{{BUILD_CMD}}`. Never deploy from your machine; staging deploys from CI, production only via the owner's release workflow.

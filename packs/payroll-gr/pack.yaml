@@ -1,0 +1,9 @@
+name: payroll-gr
+description: Greek payroll domain - temporal statutory parameters, money handling, payroll tests, ERGANI/myDATA fakes, SEPA validation
+defaults:
+  DOMAIN_NAME: payroll
+  DOMAIN_EXPERT: the accountant
+  DOMAIN_RULES: docs/rules/payroll-temporal-logic.md
+  PAYROLL_PACKAGE: internal/payroll
+descriptions:
+  PAYROLL_PACKAGE: Go package holding pure payroll calculations

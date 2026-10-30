@@ -1,0 +1,53 @@
+name: Decision (ADR needed)
+description: An architectural, cross-repo, infrastructure or legal decision to record as an ADR in {{DOCS_REPO}}.
+title: "[decision] "
+labels: ["needs-triage", "area:architecture"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Result: an ADR in `{{DOCS_REPO}}/docs/adr/` using `template.md`. Legal/domain interpretations must be marked "to be validated by an expert". Do not invent external API contracts.
+  - type: textarea
+    id: question
+    attributes:
+      label: Decision to make
+      description: The question, in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and constraints
+      description: Relevant ADRs, rules, service-map boundaries, costs, deadlines.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: Each with pros, cons and risks; mark the recommendation.
+    validations:
+      required: true
+  - type: textarea
+    id: repos
+    attributes:
+      label: Affected repos
+  - type: textarea
+    id: conflicts
+    attributes:
+      label: Conflicts with existing ADRs
+      description: Name the ADR and why reopening it is justified, or "none".
+    validations:
+      required: true
+  - type: input
+    id: decider
+    attributes:
+      label: Who decides
+      description: e.g. owner, domain expert, legal.
+    validations:
+      required: true
+  - type: textarea
+    id: followups
+    attributes:
+      label: Follow-up work
+      description: Tickets to create once decided.

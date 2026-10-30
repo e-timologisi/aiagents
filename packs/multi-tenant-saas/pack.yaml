@@ -1,0 +1,6 @@
+name: multi-tenant-saas
+description: Tenant isolation rules, RLS template, membership roles and cross-tenant denial tests
+defaults:
+  TENANT_SETTING: app.tenant_id
+descriptions:
+  TENANT_SETTING: PostgreSQL session setting carrying the current tenant id

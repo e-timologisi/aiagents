@@ -1,0 +1,20 @@
+name: frontend-nextjs
+description: Next.js / TypeScript web UI that only displays what the backend API returns
+docs_hub: false
+required:
+defaults:
+  STACK: "Next.js (App Router), TypeScript strict"
+  LINT_CMD: npm run lint
+  TEST_CMD: npm test
+  INTEGRATION_CMD: npm run typecheck
+  BUILD_CMD: npm run build
+  SECURITY_CMD: npm audit --audit-level=high
+  BACKEND_REPO: "(backend repo not set)"
+  API_CONTRACT: "../{{BACKEND_REPO}}/api/openapi.yaml"
+  API_URL_ENV: API_INTERNAL_URL
+  UI_LANGUAGES: English
+descriptions:
+  BACKEND_REPO: Repo that owns the API contract
+  API_CONTRACT: Path to the API contract relative to this repo
+  API_URL_ENV: Server-side env var holding the backend base URL
+  UI_LANGUAGES: UI languages (default first)

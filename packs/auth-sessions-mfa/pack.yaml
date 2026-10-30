@@ -1,0 +1,6 @@
+name: auth-sessions-mfa
+description: Design checklist for built-in authentication, sessions, TOTP MFA and recovery
+defaults:
+  SESSION_COOKIE: __Host-session
+descriptions:
+  SESSION_COOKIE: Session cookie name (keep the __Host- prefix)

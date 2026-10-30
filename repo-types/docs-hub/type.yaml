@@ -1,0 +1,12 @@
+name: docs-hub
+description: Documentation hub - ADRs, glossary, service map, shared rules, issue templates and the canonical agents
+docs_hub: true
+required:
+defaults:
+  STACK: "Markdown documentation"
+  LINT_CMD: "python3 scripts/sync-agents.py --check"
+  TEST_CMD: "python3 scripts/sync-agents.py --check"
+  INTEGRATION_CMD: "(none)"
+  BUILD_CMD: "(none)"
+  SECURITY_CMD: "(none)"
+descriptions:

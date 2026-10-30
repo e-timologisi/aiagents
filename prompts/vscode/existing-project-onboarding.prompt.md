@@ -1,0 +1,22 @@
+---
+name: existing-project-onboarding
+description: 'Existing project onboarding — an existing repo (or several) should adopt the agent workflow without touching its code.'
+argument-hint: 'repo paths to onboard'
+agent: lead
+---
+<!-- GENERATED from prompts/01-existing-project-onboarding.md by scripts/build-prompts.py -->
+@lead onboard the existing project at ${input:repo_paths}.
+
+1. Explorer first: launch one explorer per repo (codebase-discovery skill), QUICK OVERVIEW only; show me the summaries
+   and the estimated effort before any deep dive. Every claim needs evidence (path:line) and a tag
+   (verified | read-from-code | inferred). Secrets: location only, never values. No commands with side effects;
+   running existing tests only if I approve.
+2. Dossiers: after my go, deep dives produce docs/discovery/<repo>.md drafts (not committed yet). Merge them and show me
+   only the TOP 3 blocking questions; ask them ONE at a time with a recommended answer and options (the rest go to the
+   question queue with defaults). Branch claims must name branch, base branch and commit hashes.
+3. I confirm the unknowns, one question at a time. Then continue your pipeline: project brief (GATE 1), decisions (GATE 2),
+   architecture/kit plan (GATE 3: repo type and packs per repo, --set values, files to ADD; existing files are never
+   overwritten), backlog (GATE 4).
+4. After GATE 3 apply the kit: python3 ${input:kit_path}/scripts/apply-kit.py ... --dry-run, show the report, then for real,
+   run python3 scripts/sync-agents.py --check, commit on branch chore/aiagents and open a PR per repo (with the
+   approved dossier). Never change application code or existing CI.

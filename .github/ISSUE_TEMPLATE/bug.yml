@@ -1,0 +1,33 @@
+name: Bug
+description: Something in the kit (scripts, agents, skills, prompts, templates) does not work as documented
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include secrets, tokens, internal domains or personal data. Security problems: use the Security tab ("Report a vulnerability"), not an issue.
+  - type: input
+    id: version
+    attributes:
+      label: Kit version
+      description: Contents of VERSION or the commit SHA
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Command or prompt used, and the output (redact anything private)
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, OpenCode / VS Code version

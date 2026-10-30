@@ -1,0 +1,52 @@
+# Global placeholders used by core templates. Format (stdlib parser, keep it flat):
+#   defaults:  KEY: value   (may reference other placeholders in double braces)
+#   required:  - KEY        (must be given with --set; no default)
+#   descriptions: KEY: text
+required:
+  - PROJECT_NAME
+  - ORG
+  - DOCS_REPO
+defaults:
+  REPO_NAME: "{{TARGET_DIR_NAME}}"
+  PROJECT_PURPOSE: "Purpose: describe {{PROJECT_NAME}} in one sentence."
+  DEFAULT_BRANCH: main
+  STACK: "(stack not set)"
+  LINT_CMD: "(lint command not set)"
+  TEST_CMD: "(test command not set)"
+  INTEGRATION_CMD: "(integration test command not set)"
+  BUILD_CMD: "(build command not set)"
+  SECURITY_CMD: "(security scan command not set)"
+  STAGING_URL: "(staging URL not set)"
+  PROD_URL: "(production URL not set)"
+  CODEOWNER: "@{{ORG}}"
+  RELEASE_OWNER: "the repository owner"
+  DOMAIN_NAME: "business domain"
+  DOMAIN_EXPERT: "a domain expert"
+  DOMAIN_RULES: "docs/rules/*.md"
+  MODEL_PLANNER: github-copilot/claude-opus-5.5
+  MODEL_IMPLEMENTER: github-copilot/claude-sonnet-5.5
+  MODEL_QUICK: github-copilot/claude-haiku-5.5
+descriptions:
+  PROJECT_NAME: Human-readable project name
+  ORG: GitHub organisation or user that owns the repos
+  DOCS_REPO: Repo holding ADRs, glossary and the service map (use the repo itself for single-repo projects)
+  REPO_NAME: This repo's name (defaults to the target directory name)
+  PROJECT_PURPOSE: One-sentence purpose shown at the top of AGENTS.md
+  DEFAULT_BRANCH: Default/protected branch
+  STACK: Language/framework summary of this repo
+  LINT_CMD: Lint command
+  TEST_CMD: Unit test command
+  INTEGRATION_CMD: Integration test command
+  BUILD_CMD: Build command
+  SECURITY_CMD: Security scan command (SAST, dependency audit)
+  STAGING_URL: Staging URL
+  PROD_URL: Production URL
+  CODEOWNER: CODEOWNERS owner (user or team)
+  RELEASE_OWNER: Who runs production releases
+  DOMAIN_NAME: Domain reviewed by domain-reviewer
+  DOMAIN_EXPERT: Who validates legal/domain claims
+  DOMAIN_RULES: Rule files domain-reviewer reads
+  MODEL_PLANNER: OpenCode model for planners/reviewers
+  MODEL_IMPLEMENTER: OpenCode model for implementers
+  MODEL_QUICK: OpenCode model for quick-tasks
+  TARGET_DIR_NAME: Set automatically to the target directory name

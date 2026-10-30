@@ -1,0 +1,20 @@
+name: serverless-sam
+description: AWS SAM side jobs (Lambda, schedules, S3) that call the backend API instead of the database
+docs_hub: false
+required:
+defaults:
+  STACK: "AWS SAM, Go on Lambda (arm64)"
+  LINT_CMD: make lint
+  TEST_CMD: make test
+  INTEGRATION_CMD: make validate
+  BUILD_CMD: make build
+  SECURITY_CMD: make security
+  BACKEND_REPO: "(backend repo not set)"
+  API_URL_ENV: API_BASE_URL
+  SCHEDULE_TIMEZONE: UTC
+  STACK_PREFIX: "{{REPO_NAME}}"
+descriptions:
+  BACKEND_REPO: Repo that owns the API the jobs call
+  API_URL_ENV: Env var with the backend base URL
+  SCHEDULE_TIMEZONE: IANA time zone for business-time schedules
+  STACK_PREFIX: Prefix for function/stack/bucket names

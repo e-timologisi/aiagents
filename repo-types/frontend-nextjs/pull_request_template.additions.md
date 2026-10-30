@@ -1,0 +1,2 @@
+- [ ] Types follow the merged contract `{{API_CONTRACT}}`; no invented endpoints
+- [ ] No secrets in `NEXT_PUBLIC_*`; no business calculations in the browser; no `any`

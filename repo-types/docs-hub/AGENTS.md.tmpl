@@ -1,0 +1,11 @@
+## This repository: {{REPO_NAME}} (documentation hub)
+
+The single source of truth for decisions and shared rules of {{PROJECT_NAME}}.
+
+- `docs/adr/` — architecture decision records (`template.md`); `docs/architecture/service-map.md` — ownership, interfaces, routing, change order.
+- `GLOSSARY.md` — domain vocabulary; `docs/rules/` — shared rules copied into code repos.
+- `docs/agents/` — agent cheat sheet, ticket standard, release and security checklists.
+- `.github/ISSUE_TEMPLATE/` — canonical issue forms (code repos copy them).
+- No application code, secrets or personal data. Infrastructure docs contain no credentials; server identifiers only where the owner approved.
+- Multi-repo parent issues live here.
+- **Before finishing:** `python3 scripts/sync-agents.py --check`; relative links resolve.

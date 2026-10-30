@@ -1,0 +1,79 @@
+# CI skeleton (reference, not active). Copy to .github/workflows/ci.yml and adapt.
+#
+#   lint, test, integration, security   -> required status checks (keep job names stable)
+#   build-image  needs all four         -> never builds/pushes unless checks passed IN THIS RUN
+#   deploy-staging needs build-image    -> staging only; production is a separate manual,
+#                                          human-approved release workflow (workflow_call this file).
+#
+# Actor guard note: an `if: github.actor == '<owner>'` condition is NOT a security control
+# (PR runs use the PR branch's workflow file). Protect deploys with GitHub environments
+# (restricted to the default branch) before adding collaborators with write access.
+# Secrets: environment secrets only; the deploy job writes them to root-only files on the
+# target (mode 600). Never echo secrets; never hand-edit them on servers.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [{{DEFAULT_BRANCH}}]
+  push:
+    branches: [{{DEFAULT_BRANCH}}]
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5   # pin third-party actions by SHA
+      # - setup toolchain
+      - run: {{LINT_CMD}}
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: {{TEST_CMD}}
+
+  integration:
+    # Throwaway dependencies only (containers); never staging/production data stores.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: {{INTEGRATION_CMD}}
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: {{SECURITY_CMD}}
+
+  build-image:
+    name: Build and push
+    needs: [lint, test, integration, security]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/{{DEFAULT_BRANCH}}') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - run: {{BUILD_CMD}}
+      # - push the artifact tagged with the commit SHA
+
+  deploy-staging:
+    name: Deploy to staging
+    needs: build-image
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "deploy the SHA-tagged artifact to staging; write env secrets to root-only files"
+      # - smoke test {{STAGING_URL}}

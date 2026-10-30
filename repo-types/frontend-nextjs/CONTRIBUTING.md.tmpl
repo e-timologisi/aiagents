@@ -1,0 +1,23 @@
+# Contributing to {{REPO_NAME}}
+
+Read first: `../{{DOCS_REPO}}/docs/onboarding.md`, then `AGENTS.md`, `docs/rules/`, `../{{DOCS_REPO}}/GLOSSARY.md`.
+
+## Workflow
+- Pick an issue labelled `ready-for-agent` or `ready-for-human`; branch from `{{DEFAULT_BRANCH}}`; PR with `Closes #n`. Never push to `{{DEFAULT_BRANCH}}`.
+- Contract-first: types and calls follow `{{API_CONTRACT}}` (skills `consume-api`, `add-page`).
+- No secrets, `.env` files or personal data in commits, issues, PRs or AI chats. Nothing secret in `NEXT_PUBLIC_*`.
+
+## Commands
+```sh
+npm ci
+{{LINT_CMD}}
+{{INTEGRATION_CMD}}
+{{TEST_CMD}}
+{{BUILD_CMD}}
+```
+
+## CI gate
+One required job runs lint, typecheck, test and build; deploy/release workflows reuse it so no image is built or deployed unless it passes in the same run.
+
+## Editing agents
+Edit only `agents/<name>.md`, run `python3 scripts/sync-agents.py`, commit generated files.

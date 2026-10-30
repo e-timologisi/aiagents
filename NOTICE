@@ -1,0 +1,3 @@
+aiagents — reusable agent workflow kit.
+Licensed under the MIT License; see LICENSE.
+Third-party-derived skills keep their own credits (see core/skills/pr/CREDITS.md).

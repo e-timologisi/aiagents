@@ -1,0 +1,25 @@
+name: Suggestion
+description: Propose an improvement, a new skill, agent, prompt, repo type or pack
+labels: ["suggestion", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggestions are welcome; the maintainer decides what is adopted. Do not include secrets or private identifiers.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or need
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change, and where (core, repo type, pack, prompt)
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

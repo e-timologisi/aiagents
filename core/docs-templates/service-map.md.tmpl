@@ -1,0 +1,58 @@
+# Service map: which repo owns what
+
+Read this before starting any ticket. It tells you which repo(s) to touch, in which order, and how to link the work. Terms: [GLOSSARY.md](../../GLOSSARY.md).
+
+## Ownership
+
+| Repo | Owns | Never does |
+|---|---|---|
+| `{{DOCS_REPO}}` | ADRs, glossary, shared rules, agent skills, issue templates, this map | Application code, secrets, personal data |
+| `<backend repo>` | Business logic, data schema and migrations, authorization enforcement, API contract | Trust client-supplied identifiers |
+| `<frontend repo>` | Pages, UX, display of what the API returns | Hold secrets in public env vars, business calculations, direct database access |
+| `<jobs repo>` | Async/scheduled jobs, file generation, storage | Direct database access unless an ADR allows it |
+
+> **Contract:** `<path to API contract>` is the single source of truth for endpoints.
+
+## Interfaces
+
+| From → To | Transport | Auth | Notes |
+|---|---|---|---|
+| frontend → backend | HTTPS | <session / token> | |
+| jobs → backend | HTTPS | <TBD — decision issue> | Do not build until decided |
+| backend → database | TLS | <app role> | Never from CI or laptops against staging/prod |
+
+## Routing table
+
+| If the task involves… | Repos, in order |
+|---|---|
+| New entity / field / business rule | docs (ADR if a decision) → backend → frontend |
+| New page, copy, UX only | frontend |
+| New or changed endpoint | backend (contract + migration + endpoint) → consumers |
+| Auth, roles, permissions | docs (ADR) → backend (`security-reviewer`) → frontend |
+| Scheduled/async job, exports | docs (ADR if new resource) → backend → jobs |
+| CI/CD, release workflow | affected repo(s) + docs if the release flow changes |
+| Terminology | docs (`GLOSSARY.md`) |
+
+Unsure? Use the `task-intake` skill and ask the owner.
+
+## Cross-repo change order
+
+1. Decision/contract first (ADR; contract agreed in the provider PR).
+2. Provider (backend): migration (expand) + endpoint + contract + tests.
+3. Consumers (frontend, jobs) against the merged/staged contract.
+4. Docs.
+5. Later release: contract migration (drop old fields) after all consumers moved.
+
+## Linking work
+- Parent issue + per-repo child issues `Part of {{ORG}}/<repo>#<n>`.
+- Same branch name in every repo; each PR lists sibling PRs; merge and release in change order.
+
+## Environments
+
+| | Staging | Production |
+|---|---|---|
+| URL | {{STAGING_URL}} | {{PROD_URL}} |
+| Deploys | PRs and `{{DEFAULT_BRANCH}}` after checks | Owner-only manual release |
+
+## ADRs
+- List ADRs here as they are accepted.

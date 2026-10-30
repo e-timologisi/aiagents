@@ -1,0 +1,95 @@
+# How to use the {{PROJECT_NAME}} AI agents
+
+Which agents and skills exist, what they do and how to call them, in OpenCode and in VS Code (GitHub Copilot).
+
+Agents do the hands-on work: tickets, code, tests, PRs and docs. **Humans decide and approve**: product, legal and domain decisions; merges; production releases; secrets; and any server or cloud change.
+
+## Agents (roles)
+
+| Agent | Role | What it does | Edits? |
+|---|---|---|---|
+| `lead` | orchestrator | **Start here.** Runs the project pipeline (idea/documents/existing repo → brief → decisions → plan → backlog → dispatch → reviews → release prep) with owner approval gates | Docs only |
+| `explorer` | reviewer | Read-only map of an existing repo/module → evidence-based dossier | No |
+| `architect` | planner | Plans across repos with the service map, drafts ADRs | No |
+| `developer` | implementer | Implements a ready ticket in this repo with tests and docs | Yes |
+| `infra-developer` | implementer | CI/CD, containers, infrastructure-as-code | Yes |
+| `test-engineer` | implementer | Tests mapped to acceptance criteria | Yes |
+| `security-reviewer` | reviewer | Authorization, isolation, secrets, CI security | No, read-only |
+| `domain-reviewer` | reviewer | {{DOMAIN_NAME}} rules, reproducibility | No, read-only |
+| `quick-tasks` | docs | Small Markdown fixes | `*.md` only |
+
+Packs may add more agents; see `agents/`.
+
+## Skills
+
+Skills live in `.agents/skills/<id>/SKILL.md`; OpenCode and VS Code both read that folder. Core skills: `project-intake`, `document-ingest`, `requirements-register`, `backlog-planning`, `dispatch-tasks`, `status-report`, `project-state`, `codebase-discovery`, `task-intake`, `cross-repo-feature`, `project-setup`, `release-checklist`, `tdd`, `code-review`, `diagnosing-bugs`, `grilling`, `domain-modeling`, `codebase-design`, `pr`, `writing-for-agents`. Repo-type and pack skills are listed in `AGENTS.md`.
+
+## How to call them
+
+### OpenCode
+- Start with `@lead` (it is a primary agent: select it with Tab / the agent picker, or mention it). It launches the other agents as subagents.
+- Describe the goal; the main agent picks agents and skills.
+- Call an agent: `@architect plan the login flow`.
+- Call a skill: `use the task-intake skill: I want an export of invoices`.
+
+### VS Code (GitHub Copilot)
+1. Open the workspace with all repos side by side.
+2. In Copilot Chat, pick an **agent** from the agent dropdown, then type the request.
+3. Type `/` to run a **skill** or a **prompt file** (`.github/prompts/*.prompt.md`).
+4. Pick **lead** to start. In the **Local** harness it can run the other custom agents as subagents (its file sets the `agent` tool and `agents: ['*']`; **Run Subagent** must be enabled in Configure Tools). In the Copilot harness `agents` is not supported; if the lead cannot delegate it prints ready-to-paste prompts for each agent instead.
+5. If something doesn't appear: right-click in the Chat view → **Diagnostics**.
+
+## How agents ask you questions
+
+Agents follow `docs/agents/interaction-standard.md`: **one question at a time**, each with a recommended answer and 2–4 options explained in plain words, using the built-in question form (OpenCode `question` tool, VS Code `vscode/askQuestions`) when available. They don't ask what documents or the repo already say, ask the most blocking question first, summarise every 3–5 answers, and accept "go with your suggestions", "skip", "later" or "recommend for me".
+
+## The flow for every task
+
+1. **Ticket**: `task-intake` → ticket meeting `docs/agents/ticket-standard.md`. A human answers open decisions.
+2. **Plan**: `architect` / `cross-repo-feature`: decision/contract → provider → consumers → docs.
+3. **Build**: `developer`/`infra-developer` + `test-engineer` on same-named branches; PRs link the ticket.
+4. **Checks**: CI lint/test/security; build and deploy only after they pass in the same run.
+5. **Review**: `security-reviewer` (+ `domain-reviewer`). Auth/sessions/crypto: review again after fixes.
+6. **Merge** (human) — confirm the merged result contains every fix commit.
+7. **Staging**: human smoke test.
+8. **Release** (owner): `release-checklist` skill first.
+
+## Never ask an agent to
+- Paste or read passwords, keys or tokens in chat (agents may list secret **names** only).
+- Change servers, firewalls, DNS or cloud resources without explicit owner approval.
+- Merge PRs or release to production on its own.
+- State legal/domain facts without marking them "to be validated by {{DOMAIN_EXPERT}}".
+
+## Editing agents
+
+One **source** per agent: `agents/<name>.md`. Never edit `.opencode/agents/*` or `.github/agents/*`; they are generated and CI (`.github/workflows/agents-sync.yml`) fails if they drift.
+
+1. Edit or add `agents/<name>.md`.
+2. Run `python3 scripts/sync-agents.py`.
+3. Commit source **and** generated files. `--check` exits 1 if anything is stale.
+
+Frontmatter (flat `key: value`):
+
+| Key | Required | Meaning |
+|---|---|---|
+| `name` | yes | Agent ID; equals the file name |
+| `description` | yes | Shown to the model and in the VS Code picker |
+| `role` | yes | `implementer` \| `reviewer` \| `planner` \| `inspector` \| `docs` \| `orchestrator` (sets permissions) |
+| `model` | no | OpenCode `provider/model[#variant]` (omitted for VS Code) |
+| `mode` | no | `subagent` (default; `primary` for orchestrator) \| `primary` \| `all` |
+| `extra_permissions` | no | `action\|resource\|effect; ...` appended to role rules |
+
+Body sections: **Read first**, **Workflow**, **Rules**, **Output**, **Handoff** (under ~60 lines).
+
+| Role | OpenCode rules | VS Code `tools` |
+|---|---|---|
+| `reviewer` | edit deny; shell ask; read-only git/gh allowed | `read`, `search` |
+| `planner` | as reviewer | `read`, `search`, `web` |
+| `inspector` | edit deny; shell always ask | `read`, `search`, `execute` |
+| `docs` | edit only `*.md`; shell ask | `read`, `search`, `edit`, `todo` |
+| `implementer` | edit allow | all enabled tools |
+| `orchestrator` | mode primary; edit only `*.md`, `docs/*`; shell ask + read-only git/gh (incl. `gh issue list`, `gh pr list/checks`); subagent `*` allow | `read`, `search`, `edit`, `web`, `todo`, `agent` + `agents: ['*']` (VS Code `edit` cannot be limited to docs: the lead's instructions enforce it) |
+
+All roles: OpenCode adds `question` `*` allow (structured owner questions); VS Code roles with a `tools` list also get `vscode/askQuestions` (implementers use all enabled tools).
+
+Kit-managed files are listed in `.aiagents-manifest.json`; refresh them with `apply-kit.py --update` from the aiagents kit.

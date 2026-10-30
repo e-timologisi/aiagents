@@ -1,0 +1,45 @@
+# {{PROJECT_NAME}} — agent and engineer instructions ({{REPO_NAME}})
+
+{{PROJECT_PURPOSE}}
+
+You are a senior engineer on {{PROJECT_NAME}}. Respect the repo boundaries in the service map. Treat data exposure across users/tenants and incorrect regulated results as release blockers.
+
+## Security basics
+
+- Every request is authenticated and authorized server-side. Never trust identifiers supplied only by the client.
+- No secrets, credentials or personal data in code, logs, tests, issues, PRs or AI chats. Agents never read or print secret values; they refer to secrets by name only.
+- Deploy secrets live in CI environment secrets and are written by the deploy job to root-only files on the target; never hand-edited on servers, never committed.
+- Mock external and government endpoints in tests; never invent their contracts.
+- Legal or domain claims are marked "to be validated by {{DOMAIN_EXPERT}}" until confirmed.
+- Never use floating point for money; use decimal or minor units.
+
+<!-- aiagents:pack-sections -->
+
+<!-- aiagents:repo-section -->
+
+## Environments and releases
+
+- Staging: {{STAGING_URL}} — deploys from pull requests and `{{DEFAULT_BRANCH}}` after checks pass.
+- Production: {{PROD_URL}} — only via a manual, human-approved release workflow. Nothing deploys to production automatically.
+- `{{DEFAULT_BRANCH}}` changes only through pull requests. Image build/deploy jobs run only when lint, test and security jobs pass in the same run.
+- Before a release, verify `{{DEFAULT_BRANCH}}` contains every reviewed commit of the released PRs (`docs/agents/release-checklist.md`).
+
+## How to route work
+
+- Which repo owns what, interfaces, routing table and change order: `{{DOCS_REPO}}/docs/architecture/service-map.md`.
+- Agents and skills cheat sheet: `docs/agents/how-to-use-agents.md`.
+- Vague request → `task-intake` skill; multi-repo ticket → `cross-repo-feature` skill. Skills live in `.agents/skills/` (read by OpenCode and VS Code Copilot).
+- Ticket readiness and labels: `docs/agents/ticket-standard.md`; issue forms in `.github/ISSUE_TEMPLATE/`.
+- Agents: single source in `agents/<name>.md`; run `python3 scripts/sync-agents.py` to generate `.opencode/agents/` and `.github/agents/` and commit both. Never edit generated files; CI runs `--check`.
+- Flow: implementer → `test-engineer` → `security-reviewer` (+ `domain-reviewer`) → human merge. Reviewers are read-only. PRs touching auth, sessions or crypto are reviewed twice (initial and after fixes).
+
+## Definition of done: documentation (mandatory for every agent and engineer)
+
+Work is not finished until the documentation matches it. In the same PR (or a linked `{{DOCS_REPO}}` PR):
+
+- Update `README.md` / `CONTRIBUTING.md` when setup, commands, layout, environment variables or behaviour change.
+- Record any architectural or cross-repo decision as an ADR in `{{DOCS_REPO}}/docs/adr/`; update an existing ADR's status if superseded.
+- Update `{{DOCS_REPO}}` when infrastructure, deployment, security, data access or release flow change.
+- Add or correct terms in `{{DOCS_REPO}}/GLOSSARY.md` when new domain terms appear.
+- Comment on the related GitHub issue (what changed, links, follow-ups); open new issues for deferred work instead of leaving TODOs.
+- The final report of every agent lists which docs were updated, or states why none were needed.

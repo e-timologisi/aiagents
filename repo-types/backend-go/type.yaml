@@ -1,0 +1,18 @@
+name: backend-go
+description: Go HTTP API that owns business logic, the database schema/migrations and the API contract
+docs_hub: false
+required:
+defaults:
+  STACK: "Go, PostgreSQL, OpenAPI 3.1"
+  LINT_CMD: make lint
+  TEST_CMD: make test
+  INTEGRATION_CMD: make test-integration
+  BUILD_CMD: make build
+  SECURITY_CMD: "go run golang.org/x/vuln/cmd/govulncheck@latest ./..."
+  CONTRACT_PATH: api/openapi.yaml
+  MIGRATIONS_DIR: internal/migrate/migrations
+  API_PREFIX: /v1
+descriptions:
+  CONTRACT_PATH: Path of the OpenAPI contract in this repo
+  MIGRATIONS_DIR: Directory with numbered SQL migrations
+  API_PREFIX: Version prefix of business endpoints

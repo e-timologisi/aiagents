@@ -1,0 +1,22 @@
+# Onboarding to {{PROJECT_NAME}}
+
+## 1. Access
+- GitHub org `{{ORG}}`: ask the owner for access. Never share credentials in chat or issues.
+- Clone every repo side by side (e.g. `~/src/{{ORG}}/`) so agents can read `../{{DOCS_REPO}}`.
+
+## 2. Read (in this order)
+1. `README.md` of `{{DOCS_REPO}}`
+2. `docs/architecture/service-map.md` — which repo owns what
+3. `GLOSSARY.md` — domain vocabulary
+4. `docs/adr/` — decisions
+5. `docs/agents/how-to-use-agents.md` — agents and skills
+6. `docs/agents/ticket-standard.md` — when work is ready
+
+## 3. Work flow
+Ticket (`ready-for-agent` / `ready-for-human`) → branch from `{{DEFAULT_BRANCH}}` → PR with `Closes #n` → CI green → reviews → human merge → staging ({{STAGING_URL}}) → owner releases to production ({{PROD_URL}}).
+
+## 4. Never
+- Push to `{{DEFAULT_BRANCH}}`, merge your own unreviewed PR, or run production releases unless you are the owner.
+- Paste secrets, tokens or personal data into code, issues, PRs or AI chats.
+- Connect to staging/production databases or servers from your laptop or CI without an approved runbook.
+- Invent legal/domain facts; mark them "to be validated by {{DOMAIN_EXPERT}}".
