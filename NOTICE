@@ -1,3 +1,9 @@
 aiagents — reusable agent workflow kit.
-Licensed under the MIT License; see LICENSE.
-Third-party-derived skills keep their own credits (see core/skills/pr/CREDITS.md).
+Copyright (c) 2026 e-timologisi. Licensed under the MIT License; see LICENSE.
+
+This kit includes third-party material that is NOT copyright e-timologisi and remains under
+its own MIT license and copyright notice:
+  - github.com/mattpocock/skills — MIT, Copyright (c) 2026 Matt Pocock
+  - github.com/humanlayer/skills — MIT, Copyright (c) 2026 HumanLayer
+Full license texts and the per-file provenance table: THIRD-PARTY-NOTICES.md.
+Each third-party skill directory also contains LICENSE.upstream and UPSTREAM.md.

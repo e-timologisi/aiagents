@@ -1,3 +1,5 @@
+<!-- Derived from github.com/mattpocock/skills (MIT, Copyright (c) 2026 Matt Pocock). See docs/agents/THIRD-PARTY-NOTICES.md. -->
+
 # Domain Docs
 
 How the engineering skills should consume this repo's domain documentation when exploring the codebase.

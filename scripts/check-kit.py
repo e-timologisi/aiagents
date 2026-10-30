@@ -9,6 +9,8 @@ Checks:
   - every {{PLACEHOLDER}} is declared in its scope (core/placeholders.yaml + type.yaml or pack.yaml)
   - type.yaml / pack.yaml names match their directory; repo types have the required files
   - VS Code prompt files are in sync with prompts/*.md
+  - third-party attribution: every directory with UPSTREAM.md has LICENSE.upstream and is listed in
+    THIRD-PARTY-NOTICES.md, which reproduces every upstream MIT license in full
   - no forbidden strings: built-in generic patterns (12-digit AWS account ids, ARNs, IPv4 addresses,
     GitHub tokens, Google OAuth secrets, private keys, password literals) plus optional local regexes
     from the untracked `.kit-forbidden.txt` (one per line; put your own domains/org names there)
@@ -19,7 +21,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from kitlib import KIT, PLACEHOLDER, declared, frontmatter, parse_yaml, scan_forbidden  # noqa: E402
+from kitlib import KIT, PLACEHOLDER, declared, check_attribution, frontmatter, parse_yaml, scan_forbidden  # noqa: E402
 
 REQUIRED_FILES = [
     "core/agents/lead.md", "core/agents/explorer.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
@@ -143,6 +145,8 @@ def main():
                          capture_output=True, text=True)
     if res.returncode != 0:
         errors.append("VS Code prompts out of date: run python3 scripts/build-prompts.py\n" + res.stderr.strip())
+
+    errors += [f"attribution: {e}" for e in check_attribution(KIT)]
 
     forbidden = scan_forbidden(KIT)
     errors += [f"forbidden: {h}" for h in forbidden]

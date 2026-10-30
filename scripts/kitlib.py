@@ -126,3 +126,36 @@ def scan_forbidden(root, skip_dirs=(".git",), extra=None):
                 if rx.search(line):
                     hits.append(f"{p.relative_to(root)}:{n}: {label}")
     return hits
+
+
+NOTICES_FILE = "THIRD-PARTY-NOTICES.md"
+UPSTREAM_LICENSE_MARKERS = ("Copyright (c) 2026 Matt Pocock", "Copyright (c) 2026 HumanLayer")
+MIT_PERMISSION = "Permission is hereby granted, free of charge"
+
+
+def check_attribution(root):
+    """Every UPSTREAM.md dir needs LICENSE.upstream and a listing in THIRD-PARTY-NOTICES.md."""
+    root = pathlib.Path(root)
+    errors = []
+    notices_path = root / NOTICES_FILE
+    notices = notices_path.read_text(encoding="utf-8") if notices_path.exists() else ""
+    if not notices:
+        errors.append(f"missing {NOTICES_FILE}")
+    else:
+        for marker in UPSTREAM_LICENSE_MARKERS:
+            if marker not in notices:
+                errors.append(f"{NOTICES_FILE}: missing license text with {marker!r}")
+        if notices.count(MIT_PERMISSION) < len(UPSTREAM_LICENSE_MARKERS):
+            errors.append(f"{NOTICES_FILE}: must reproduce every upstream MIT license in full")
+    for up in sorted(root.rglob("UPSTREAM.md")):
+        if ".git" in up.parts:
+            continue
+        rel = up.parent.relative_to(root).as_posix()
+        lic = up.parent / "LICENSE.upstream"
+        if not lic.exists():
+            errors.append(f"{rel}: UPSTREAM.md without LICENSE.upstream")
+        elif MIT_PERMISSION not in lic.read_text(encoding="utf-8"):
+            errors.append(f"{rel}/LICENSE.upstream: missing MIT permission notice")
+        if notices and f"`{rel}/`" not in notices:
+            errors.append(f"{rel}: not listed in {NOTICES_FILE}")
+    return errors

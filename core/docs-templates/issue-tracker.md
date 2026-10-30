@@ -1,3 +1,5 @@
+<!-- Derived from github.com/mattpocock/skills (MIT, Copyright (c) 2026 Matt Pocock). See docs/agents/THIRD-PARTY-NOTICES.md. -->
+
 # Issue tracker: GitHub
 
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.

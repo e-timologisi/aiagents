@@ -111,6 +111,8 @@ def build_plan(type_name, pack_names, standalone, type_spec):
     plan_put(plan, "CONTRIBUTING.md", tdir / "CONTRIBUTING.md.tmpl", f"type:{type_name}")
     plan_put(plan, "README.md", tdir / "README.md.tmpl", f"type:{type_name}")
 
+    if any(d.endswith("/LICENSE.upstream") for d in plan):
+        plan_put(plan, "docs/agents/THIRD-PARTY-NOTICES.md", KIT / "THIRD-PARTY-NOTICES.md", "kit")
     add_tree(plan, KIT / "prompts", "docs/agents/prompts", "prompts")
     for dest in [d for d in plan if d.startswith("docs/agents/prompts/vscode/")]:
         entry = plan.pop(dest)
