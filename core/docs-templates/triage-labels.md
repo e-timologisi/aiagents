@@ -1,3 +1,5 @@
+<!-- Derived from github.com/mattpocock/skills (MIT, Copyright (c) 2026 Matt Pocock). See docs/agents/THIRD-PARTY-NOTICES.md. -->
+
 # Triage Labels
 
 The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.

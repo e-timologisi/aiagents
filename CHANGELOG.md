@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.1 — 2026-10-30
+
+Third-party attribution.
+- Added `THIRD-PARTY-NOTICES.md`: full MIT license texts of mattpocock/skills (© 2026 Matt Pocock) and humanlayer/skills (© 2026 HumanLayer) and a programmatic provenance table (kit path → upstream path, commit, ratio, modifications).
+- Third-party skill directories (`code-review`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `grilling`, `pr`, `tdd`, `writing-for-agents`) now carry `LICENSE.upstream` and `UPSTREAM.md`; derived docs templates (`domain.md`, `issue-tracker.md`, `triage-labels.md`) have an attribution comment.
+- `apply-kit.py` installs `docs/agents/THIRD-PARTY-NOTICES.md` whenever third-party files are installed (managed by `--update`).
+- `check-kit.py` checks attribution (UPSTREAM.md ⇒ LICENSE.upstream, listed in the notices, both licenses in full); tests added.
+- `pr/CREDITS.md`: `show-me` link now points to humanlayer/skills.
+- NOTICE, README (license) and CONTRIBUTING (third-party material rule) clarified: the kit is MIT © e-timologisi; third-party material keeps its own MIT notices.
+
 ## 0.3.0 — 2026-10-30
 
 First public-ready version (MIT).

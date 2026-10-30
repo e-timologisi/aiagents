@@ -9,6 +9,7 @@ Thank you for your interest. This kit has a single maintainer ([@e-timologisi](h
 - Security problems: never in public; see [SECURITY.md](SECURITY.md).
 - Be kind; see [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 - No CLA or DCO sign-off is required. By contributing you agree your contribution is licensed under the MIT License of this repository.
+- **Third-party material**: only add content from other projects if its license is compatible with MIT, and in the same PR add its full license text and a provenance row to `THIRD-PARTY-NOTICES.md`, plus `UPSTREAM.md` (source URL, upstream commit, retrieved date, modifications) and `LICENSE.upstream` in the skill directory. Do not edit upstream-derived files beyond what `UPSTREAM.md` records. `check-kit.py` enforces the structure.
 
 ## Rules for changes
 

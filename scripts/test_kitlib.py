@@ -48,5 +48,48 @@ class ScanForbiddenTest(unittest.TestCase):
             self.scan({"a.md": "x"}, local="(unclosed\n")
 
 
+class CheckAttributionTest(unittest.TestCase):
+    LICENSES = "".join(f"{m}\n{kitlib.MIT_PERMISSION}\n" for m in kitlib.UPSTREAM_LICENSE_MARKERS)
+
+    def check(self, files):
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            for name, text in files.items():
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text(text, encoding="utf-8")
+            return kitlib.check_attribution(root)
+
+    def test_complete_attribution_passes(self):
+        self.assertEqual(self.check({
+            "THIRD-PARTY-NOTICES.md": self.LICENSES + "- `core/skills/x/`\n",
+            "core/skills/x/UPSTREAM.md": "src",
+            "core/skills/x/LICENSE.upstream": kitlib.MIT_PERMISSION,
+        }), [])
+
+    def test_missing_license_upstream(self):
+        errs = self.check({"THIRD-PARTY-NOTICES.md": self.LICENSES + "`core/skills/x/`",
+                           "core/skills/x/UPSTREAM.md": "src"})
+        self.assertTrue(any("without LICENSE.upstream" in e for e in errs), errs)
+
+    def test_unlisted_upstream_dir(self):
+        errs = self.check({"THIRD-PARTY-NOTICES.md": self.LICENSES,
+                           "core/skills/x/UPSTREAM.md": "src",
+                           "core/skills/x/LICENSE.upstream": kitlib.MIT_PERMISSION})
+        self.assertTrue(any("not listed" in e for e in errs), errs)
+
+    def test_notices_must_contain_both_licenses(self):
+        errs = self.check({"THIRD-PARTY-NOTICES.md": kitlib.UPSTREAM_LICENSE_MARKERS[0] + kitlib.MIT_PERMISSION})
+        self.assertTrue(any(kitlib.UPSTREAM_LICENSE_MARKERS[1] in e for e in errs), errs)
+        self.assertTrue(any("in full" in e for e in errs), errs)
+
+    def test_missing_notices_file(self):
+        self.assertIn("missing THIRD-PARTY-NOTICES.md", self.check({}))
+
+    def test_real_kit_notices_pass_forbidden_scan(self):
+        files = [kitlib.KIT / kitlib.NOTICES_FILE] + sorted((kitlib.KIT / "core").rglob("*.upstream"))
+        hits = kitlib.scan_forbidden(kitlib.KIT)
+        self.assertEqual([h for h in hits if any(h.startswith(str(f.relative_to(kitlib.KIT))) for f in files)], [])
+
+
 if __name__ == "__main__":
     unittest.main()

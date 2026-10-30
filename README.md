@@ -118,7 +118,7 @@ Report vulnerabilities privately via the repository's **Security** tab ("Report 
 
 ## License
 
-[MIT](LICENSE) © 2026 e-timologisi. Third-party-derived skills keep their credits (see `NOTICE`).
+The kit is [MIT](LICENSE) © 2026 e-timologisi, **except** third-party material, which keeps its own MIT license and copyright: several core skills (`tdd`, `code-review`, `diagnosing-bugs`, `domain-modeling`, `codebase-design`, `grilling`, `writing-for-agents`, `pr`) and three docs templates come from [mattpocock/skills](https://github.com/mattpocock/skills) (MIT © 2026 Matt Pocock), and part of `pr` from [humanlayer/skills](https://github.com/humanlayer/skills) (MIT © 2026 HumanLayer). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the full license texts and per-file provenance, and `NOTICE`. Installs copy the notices to `docs/agents/THIRD-PARTY-NOTICES.md`; keep them when you redistribute.
 
 ## Notes
 
