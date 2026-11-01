@@ -28,6 +28,7 @@ You are a senior engineer on {{PROJECT_NAME}}. Respect the repo boundaries in th
 
 - Which repo owns what, interfaces, routing table and change order: `{{DOCS_REPO}}/docs/architecture/service-map.md`.
 - Agents and skills cheat sheet: `docs/agents/how-to-use-agents.md`.
+- Parallel agents, merge order and working without ticket/code-host/server access: `docs/agents/access-and-conflicts.md`.
 - Vague request → `task-intake` skill; multi-repo ticket → `cross-repo-feature` skill. Skills live in `.agents/skills/` (read by OpenCode and VS Code Copilot).
 - Ticket readiness and labels: `docs/agents/ticket-standard.md`; issue forms in `.github/ISSUE_TEMPLATE/`.
 - Agents: single source in `agents/<name>.md`; run `python3 scripts/sync-agents.py` to generate `.opencode/agents/` and `.github/agents/` and commit both. Never edit generated files; CI runs `--check`.

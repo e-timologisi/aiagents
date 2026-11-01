@@ -101,6 +101,8 @@ def build_plan(type_name, pack_names, standalone, type_spec):
         plan_put(plan, f"docs/agents/{name}", dt / name, "core")
     plan_put(plan, "docs/agents/how-to-use-agents.md", dt / "how-to-use-agents.md.tmpl", "core")
     plan_put(plan, "docs/agents/interaction-standard.md", dt / "interaction-standard.md.tmpl", "core")
+    plan_put(plan, "docs/agents/access-and-conflicts.md", dt / "access-and-conflicts.md.tmpl", "core")
+    plan_put(plan, "docs/agents/templates/work-log.md", dt / "work-log.md", "core")
     add_tree(plan, dt / "project", "docs/agents/templates", "core")
     if type_spec.get("docs_hub") == "true" or standalone:
         plan_put(plan, "docs/architecture/service-map.md", dt / "service-map.md.tmpl", "core")

@@ -16,6 +16,7 @@ Agents do the hands-on work: tickets, code, tests, PRs and docs. **Humans decide
 | `test-engineer` | implementer | Tests mapped to acceptance criteria | Yes |
 | `security-reviewer` | reviewer | Authorization, isolation, secrets, CI security | No, read-only |
 | `domain-reviewer` | reviewer | {{DOMAIN_NAME}} rules, reproducibility | No, read-only |
+| `ticket-tracker` | reviewer | Optional. After the lead verifies a merge: updates the ticket (status, comment, follow-ups) and mirrors docs to the wiki; needs tracker access, else it reports and stops | Tracker/wiki only, never files |
 | `quick-tasks` | docs | Small Markdown fixes | `*.md` only |
 
 Packs may add more agents; see `agents/`.
@@ -53,6 +54,9 @@ Agents follow `docs/agents/interaction-standard.md`: **one question at a time**,
 6. **Merge** (human) — confirm the merged result contains every fix commit.
 7. **Staging**: human smoke test.
 8. **Release** (owner): `release-checklist` skill first.
+
+## Parallel work and missing access
+See `docs/agents/access-and-conflicts.md`: files per agent are listed before parallel work, merge order is stated, open PRs are re-checked after every merge, and `main` is verified by content. Agents check what they can reach once, say so plainly, and fall back to `docs/work-log.md` (`LOCAL-<n>` keys) when there is no ticket system.
 
 ## Never ask an agent to
 - Paste or read passwords, keys or tokens in chat (agents may list secret **names** only).

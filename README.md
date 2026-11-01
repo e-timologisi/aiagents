@@ -7,7 +7,7 @@
 A reusable, project-agnostic kit for running software projects with AI agents (OpenCode and VS Code GitHub Copilot) and humans in clear roles. Extracted from real multi-repo projects. **Docs, config and prompts only**: no application code, no infrastructure specifics, no secrets.
 
 What a project gets:
-- **Agents** (one source per agent, generated for OpenCode and VS Code): `lead` (single entry point, orchestrates everything with owner approval gates), `explorer` (read-only discovery of existing code), `architect`, `developer`, `infra-developer`, `test-engineer`, `security-reviewer`, `domain-reviewer`, `quick-tasks`.
+- **Agents** (one source per agent, generated for OpenCode and VS Code): `lead` (single entry point, orchestrates everything with owner approval gates), `explorer` (read-only discovery of existing code), `architect`, `developer`, `infra-developer`, `test-engineer`, `security-reviewer`, `domain-reviewer`, `quick-tasks`, `ticket-tracker` (optional: updates ticket and wiki after a verified merge).
 - **Skills** (`.agents/skills/`): `project-intake`, `document-ingest`, `requirements-register`, `backlog-planning`, `dispatch-tasks`, `status-report`, `project-state`, `codebase-discovery`, `task-intake`, `cross-repo-feature`, `project-setup`, `release-checklist`, `tdd`, `code-review`, `diagnosing-bugs`, `grilling`, `domain-modeling`, `codebase-design`, `pr`, `writing-for-agents` + repo-type and pack skills.
 - **Process docs**: `AGENTS.md` with "Definition of done: documentation", ticket standard, issue forms, PR template, release and security checklists, service map, ADR template, glossary.
 - **Prompts**: ready-to-paste prompts, also as VS Code prompt files (`.github/prompts/`).
@@ -99,6 +99,8 @@ All roles: OpenCode adds `question` `*` allow (structured owner questions); VS C
 8. **Docs are part of done** — every agent report lists the docs it updated.
 9. **Contract first** for APIs; consumers build only against the merged contract.
 10. **Mark legal/domain claims "to be validated by an expert"**; never invent statutory figures or external API contracts.
+11. **Parallel agents conflict.** List files per agent first, serialize overlaps, state the merge order, re-check open PRs after every merge, never merge before the final report, and verify `main` by content (not SHA).
+12. **Missing access is normal.** Check once with a cheap read-only call, say it once, pass an `Access:` line to agents, fall back to a plain work-log (`LOCAL-<n>`), never invent keys or claim updates that did not happen.
 
 ## Safety notes
 

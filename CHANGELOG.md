@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-01
+
+Parallel-work conflict prevention, access fallback and a generic tracker agent. Addresses #14, #15, #16.
+- `lead`: conflict-prevention rules (files per agent before parallel work, serialize overlaps, merge order with PR links, re-check open PRs after every merge, same-file work shares a ticket/branch, never merge before the final report, verify the default branch by content and why).
+- Every core agent has an `## Access` paragraph (cheapest read-only check, say it once, `Access:` line, no invented keys, opt-in servers/secrets, merge default branch before reporting and report the tip SHA).
+- New agent `ticket-tracker` (generic, optional): updates ticket and wiki after a verified merge with guard rails. New placeholders `TRACKER_*` and `WIKI_*` (all have defaults).
+- New installed docs `docs/agents/access-and-conflicts.md` (rules + dispatch template) and `docs/agents/templates/work-log.md` (`LOCAL-<n>` fallback).
+- `dispatch-tasks` brief gains `Access:` and file lists; README/HOWTO lessons 11–12.
+- `check-kit.py` enforces the Access paragraph and the lead rules.
+
 ## 0.3.1 — 2026-10-30
 
 Third-party attribution.
