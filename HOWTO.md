@@ -124,6 +124,9 @@ Always yours: merging, releasing, passwords and secrets (agents may only mention
 
 Documents produced that day: requirements register, project brief, decision briefs + ADRs, service map, project state, status report, 9 issues, PRs.
 
+## Parallel agents and missing access
+The lead lists which files each agent touches before running agents in parallel, tells you the merge order with PR links, and re-checks open PRs after each merge. Do not merge before the agent's final report. If an agent cannot reach the ticket system, code host or a server it says so once and uses the fallback in `docs/agents/access-and-conflicts.md`. The optional `ticket-tracker` agent (fill the `TRACKER_*`/`WIKI_*` values with `--set`) updates tickets and mirrors docs after the lead verified a merge.
+
 ## Resuming in a fresh chat
 Write: `@lead resume from docs/project-state.md`. The lead reads the state file (phase, gates, decisions, open questions, tickets), summarises it in five lines, checks PR statuses and continues. Keep the state file committed.
 
@@ -163,6 +166,8 @@ Write: `@lead resume from docs/project-state.md`. The lead reads the state file 
 8. Documentation is part of "done".
 9. The API contract is agreed before the screens are built.
 10. Legal and domain statements are "to be validated by an expert".
+11. Parallel agents: files listed first, merge order stated, open PRs re-checked after each merge, `main` verified by content.
+12. No access to a tracker or server? Agents say so once and fall back to `docs/work-log.md`; nothing is invented.
 
 ---
 

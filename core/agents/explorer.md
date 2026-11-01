@@ -40,5 +40,9 @@ Questions for the owner: 1. ...
 Suggested next step: <deep dive area | ready for lead>
 ```
 
+## Access
+Use the access summary in your task (`Access:` line from the lead); do not re-test or retry what it lists as missing. If none is given, check once with the cheapest read-only call (never with secrets) and tell the user plainly, once, what is missing and the fallback (`docs/agents/access-and-conflicts.md`). No ticket system: use `LOCAL-<n>` keys from `docs/work-log.md`; never invent keys or claim an update that did not happen. No code-host access: commit locally and report instead of pushing. Servers, credentials and secrets are opt-in: never ask for ones you do not have.
+If you push a branch: right before your final report merge `origin/{{DEFAULT_BRANCH}}` into it if it moved (say so) and report the final tip SHA and `git log origin/{{DEFAULT_BRANCH}}..origin/<branch>`.
+
 ## Handoff
 Back to `lead`, which merges dossiers and asks the owner to confirm unknowns.

@@ -23,6 +23,16 @@ defaults:
   DOMAIN_NAME: "business domain"
   DOMAIN_EXPERT: "a domain expert"
   DOMAIN_RULES: "docs/rules/*.md"
+  TRACKER_NAME: "the issue tracker"
+  TRACKER_URL: "(tracker URL not set)"
+  TRACKER_PROJECT: "(tracker project not set)"
+  TRACKER_LABEL: "(tracker label not set)"
+  TRACKER_KEY_PREFIX: "(ticket key prefix not set)"
+  TRACKER_STATUSES: "To Do -> In Progress -> In Review -> Done"
+  TRACKER_IDS: "(tracker ids not set)"
+  WIKI_NAME: "the wiki"
+  WIKI_SPACE: "(wiki space not set)"
+  WIKI_PAGES: "(wiki mirror pages not set)"
   MODEL_PLANNER: github-copilot/claude-opus-5.5
   MODEL_IMPLEMENTER: github-copilot/claude-sonnet-5.5
   MODEL_QUICK: github-copilot/claude-haiku-5.5
@@ -46,6 +56,16 @@ descriptions:
   DOMAIN_NAME: Domain reviewed by domain-reviewer
   DOMAIN_EXPERT: Who validates legal/domain claims
   DOMAIN_RULES: Rule files domain-reviewer reads
+  TRACKER_NAME: Name of the ticket system the ticket-tracker agent updates (for example Jira); GitHub Issues work without this agent
+  TRACKER_URL: Base URL of the tracker site
+  TRACKER_PROJECT: Tracker project the agent may touch (it refuses every other project)
+  TRACKER_LABEL: Label a ticket must carry before the agent may touch it
+  TRACKER_KEY_PREFIX: Ticket key prefix (for example ABC for ABC-12)
+  TRACKER_STATUSES: Allowed status path, in order
+  TRACKER_IDS: Fixed tracker ids the agent needs (cloud/site id, epic keys); no secrets
+  WIKI_NAME: Name of the wiki the agent mirrors docs to (for example Confluence)
+  WIKI_SPACE: Wiki space or section for mirror pages
+  WIKI_PAGES: Mirror page names and ids the agent may update
   MODEL_PLANNER: OpenCode model for planners/reviewers
   MODEL_IMPLEMENTER: OpenCode model for implementers
   MODEL_QUICK: OpenCode model for quick-tasks

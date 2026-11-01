@@ -5,6 +5,7 @@ Usage: python3 scripts/check-kit.py
 
 Checks:
   - every skill directory has SKILL.md with frontmatter name == directory and a description
+  - every agent has an Access paragraph; the lead carries the conflict-prevention and access rules
   - every agent source parses with core/scripts/sync-agents.py rules
   - every {{PLACEHOLDER}} is declared in its scope (core/placeholders.yaml + type.yaml or pack.yaml)
   - type.yaml / pack.yaml names match their directory; repo types have the required files
@@ -24,7 +25,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from kitlib import KIT, PLACEHOLDER, declared, check_attribution, frontmatter, parse_yaml, scan_forbidden  # noqa: E402
 
 REQUIRED_FILES = [
-    "core/agents/lead.md", "core/agents/explorer.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
+    "core/agents/lead.md", "core/agents/explorer.md", "core/agents/ticket-tracker.md",
+    "core/docs-templates/access-and-conflicts.md.tmpl", "core/docs-templates/work-log.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
 ] + [f"core/skills/{s}/SKILL.md" for s in (
     "project-intake", "document-ingest", "requirements-register", "backlog-planning", "dispatch-tasks",
     "status-report", "project-state", "codebase-discovery", "project-setup", "release-checklist",
@@ -124,6 +126,14 @@ def main():
         for a in sorted((base / "agents").glob("*.md")) if (base / "agents").is_dir() else []:
             if marker not in a.read_text(encoding="utf-8"):
                 errors.append(f"{a.relative_to(KIT)}: missing interaction-standard line in Rules")
+    for base, _ in scopes:
+        for a in sorted((base / "agents").glob("*.md")) if (base / "agents").is_dir() else []:
+            if "\n## Access\n" not in a.read_text(encoding="utf-8"):
+                errors.append(f"{a.relative_to(KIT)}: missing '## Access' paragraph")
+    lead_text = (KIT / "core" / "agents" / "lead.md").read_text(encoding="utf-8")
+    for needle in ("by CONTENT", "`Access:` line", "merge order", "mergeStateStatus"):
+        if needle not in lead_text:
+            errors.append(f"core/agents/lead.md: missing conflict/access rule ({needle})")
     for sk in ONE_QUESTION_SKILLS:
         p = KIT / "core" / "skills" / sk / "SKILL.md"
         if p.exists() and "one question at a time" not in p.read_text(encoding="utf-8").lower():
