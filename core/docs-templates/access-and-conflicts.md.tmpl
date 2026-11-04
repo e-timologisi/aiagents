@@ -18,15 +18,17 @@ People and agents may lack access to the ticket system, wiki, code host, servers
 
 1. **Check once at the start** what you can reach, with the cheapest read-only call, never with a secret:
 
+   Recorded choices: code host {{CODE_HOST_NAME}} via {{CODE_HOST_METHOD}}; tracker {{TRACKER_NAME}} via {{TRACKER_METHOD}}; wiki {{WIKI_NAME}} via {{WIKI_METHOD}} (methods: `mcp`, `cli`, `api`, `manual`; change them with `/setup access`).
+
    | Resource | Check | Fallback |
    |---|---|---|
    | Ticket system / wiki | A read-only "who am I" call of its tool | `docs/work-log.md` with `LOCAL-<n>` keys |
-   | Code host | `gh auth status` and `git ls-remote origin` | Commit locally; report instead of pushing |
+   | Code host | Its CLI's auth status (e.g. `gh auth status`) or `git ls-remote origin` | Commit locally; report instead of pushing |
    | Servers | Only if the task needs it and access was approved; never probe | Skip; report what an owner must do |
    | Database | Only local/test databases | Unit tests and throwaway test databases only |
 
 2. **Say it once**: tell the user plainly what is missing and the fallback; do not repeat it in every message.
-3. **One access summary**: the lead keeps it and passes it in every dispatch as an `Access:` line, so agents do not retry.
+3. **One access summary**: `/setup` writes it to `.aiagents/access.md` (choices, connection method, check result, fallback); the lead reads it at session start, keeps it and passes it in every dispatch as an `Access:` line, so agents do not retry.
 4. **No ticket system**: copy `docs/agents/templates/work-log.md` to `docs/work-log.md` and add an entry per piece of work with the next `LOCAL-<n>` key. Branch `LOCAL-<n>-<slug>`, commit subjects and PR titles `LOCAL-<n>: <summary>`. Any CI check for tracker keys applies only where the tracker is used. When tracker access appears, import the open entries, record the new key next to each and leave the old keys in Git history.
 5. **Never invent** ticket keys and never claim an update (ticket, wiki, push, deploy) that did not happen.
 6. **Opt-in only**: servers, credentials and secrets are never requested. No code-host access means commit locally and report.

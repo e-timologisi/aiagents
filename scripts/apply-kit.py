@@ -4,8 +4,10 @@
 Usage:
   python3 scripts/apply-kit.py --type backend-go|frontend-nextjs|serverless-sam|docs-hub \
       --target <repo dir> --set PROJECT_NAME=Acme --set ORG=acme --set DOCS_REPO=acme-docs \
-      [--pack multi-tenant-saas --pack ...] [--standalone] [--dry-run]
-  python3 scripts/apply-kit.py --target <repo dir> --update [--set KEY=VALUE ...] [--dry-run]
+      [--pack multi-tenant-saas --pack ...] [--standalone] [--profile lean|full] [--agent NAME ...] [--dry-run]
+  python3 scripts/apply-kit.py --target <repo dir> --update [--set KEY=VALUE ...] [--pack P] [--agent A] [--dry-run]
+  python3 scripts/apply-kit.py --target <repo dir> --bootstrap [--dry-run]   # only the /setup command
+  python3 scripts/apply-kit.py --target <repo dir> --detect                 # read-only guesses (JSON)
 
 Copies core + repo type + packs into the target (agents/, .agents/skills/, .github/,
 docs/agents/, AGENTS.md, CONTRIBUTING.md, README.md ...), substitutes {{PLACEHOLDERS}} and
@@ -15,6 +17,11 @@ values, file hashes) and runs scripts/sync-agents.py in the target.
 --update refreshes kit-managed files whose content still matches the manifest hash;
 files the user modified are reported as conflicts and left untouched.
 Never pass secrets with --set: values are stored in the manifest.
+
+--profile full (default, unchanged behaviour) installs everything. --profile lean (what /setup uses)
+installs lead, explorer, a small core skill set, AGENTS.md, interaction standard, access-and-conflicts,
+work-log template, the /setup command and the chosen packs; --agent adds further agents.
+--update keeps the stored profile, packs and agents and adds new --pack/--agent choices.
 """
 import argparse
 import json
@@ -23,7 +30,8 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from kitlib import KIT, PLACEHOLDER, parse_yaml, sha256  # noqa: E402
+from kitlib import (KIT, LEAN_AGENTS, PLACEHOLDER, PROFILES, detect, lean_keep,  # noqa: E402
+                    parse_yaml, render_command, sha256)
 
 MANIFEST = ".aiagents-manifest.json"
 REPO_MARK = "<!-- aiagents:repo-section -->"
@@ -62,7 +70,25 @@ def plan_put(plan, dest, src, origin, text=None):
                   "overrides": (prev["origin"] if prev else None)}
 
 
-def build_plan(type_name, pack_names, standalone, type_spec):
+def agent_names(type_name, pack_names):
+    dirs = [KIT / "core" / "agents", KIT / "repo-types" / type_name / "agents"]
+    dirs += [KIT / "packs" / p / "agents" for p in pack_names]
+    return sorted({a.stem for d in dirs if d.is_dir() for a in d.glob("*.md")})
+
+
+def add_commands(plan):
+    for src in sorted((KIT / "core" / "commands").glob("*.md")):
+        for dest, text in render_command(src).values():
+            plan_put(plan, dest, None, "core", text)
+
+
+def bootstrap_plan():
+    plan = {}
+    add_commands(plan)
+    return plan
+
+
+def build_plan(type_name, pack_names, standalone, type_spec, profile="full", agents=()):
     plan = {}
     core, tdir = KIT / "core", KIT / "repo-types" / type_name
     pdirs = [KIT / "packs" / p for p in pack_names]
@@ -113,8 +139,14 @@ def build_plan(type_name, pack_names, standalone, type_spec):
     plan_put(plan, "CONTRIBUTING.md", tdir / "CONTRIBUTING.md.tmpl", f"type:{type_name}")
     plan_put(plan, "README.md", tdir / "README.md.tmpl", f"type:{type_name}")
 
+    if profile == "lean":
+        keep = set(LEAN_AGENTS) | set(agents)
+        plan = {d: e for d, e in plan.items() if lean_keep(d, e["origin"], keep)}
+    add_commands(plan)
     if any(d.endswith("/LICENSE.upstream") for d in plan):
         plan_put(plan, "docs/agents/THIRD-PARTY-NOTICES.md", KIT / "THIRD-PARTY-NOTICES.md", "kit")
+    if profile == "lean":
+        return plan
     add_tree(plan, KIT / "prompts", "docs/agents/prompts", "prompts")
     for dest in [d for d in plan if d.startswith("docs/agents/prompts/vscode/")]:
         entry = plan.pop(dest)
@@ -145,6 +177,31 @@ def render(text, values):
     return PLACEHOLDER.sub(lambda m: values.get(m.group(1), m.group(0)), text)
 
 
+def write_bootstrap(target, dry_run):
+    """Install only the /setup command files; never touches existing files or the manifest."""
+    prefix = "[dry-run] " if dry_run else ""
+    print(f"{prefix}aiagents {kit_version()} → {target} (bootstrap: /setup command only)")
+    for dest, e in sorted(bootstrap_plan().items()):
+        path = target / dest
+        if path.exists():
+            print(f"  skipped (exists): {dest}")
+            continue
+        print(f"  created: {dest}")
+        if not dry_run:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(e["text"], encoding="utf-8")
+    local = target / ".aiagents" / "kit.local"
+    print(f"  kit path for /setup: {local.relative_to(target)} (git-ignored via .aiagents/.gitignore)")
+    if not dry_run:
+        local.parent.mkdir(parents=True, exist_ok=True)
+        local.write_text(str(KIT) + "\n", encoding="utf-8")
+        ignore = local.parent / ".gitignore"
+        if not ignore.exists():
+            ignore.write_text("kit.local\n", encoding="utf-8")
+    print("  next: open this repo in OpenCode or VS Code (Copilot agent mode) and run /setup")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description="Apply the aiagents kit to a target repository.")
     ap.add_argument("--type", choices=types())
@@ -154,6 +211,12 @@ def main():
     ap.add_argument("--standalone", action="store_true",
                     help="single-repo project: also install service map, ADR template, glossary, onboarding")
     ap.add_argument("--update", action="store_true", help="refresh unmodified kit-managed files")
+    ap.add_argument("--profile", choices=PROFILES,
+                    help="full (default for new installs) or lean (core minimum + chosen packs/agents)")
+    ap.add_argument("--agent", action="append", default=[], metavar="NAME",
+                    help="extra agent for the lean profile (repeatable)")
+    ap.add_argument("--bootstrap", action="store_true", help="install only the /setup command files")
+    ap.add_argument("--detect", action="store_true", help="print read-only guesses for /setup as JSON")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -161,6 +224,11 @@ def main():
     if not target.is_dir():
         print(f"error: target {target} is not a directory", file=sys.stderr)
         return 2
+    if args.detect:
+        print(json.dumps(detect(target), indent=2))
+        return 0
+    if args.bootstrap:
+        return write_bootstrap(target, args.dry_run)
     mpath = target / MANIFEST
     manifest = json.loads(read(mpath)) if mpath.exists() else {}
     if args.update and not manifest:
@@ -173,6 +241,12 @@ def main():
         return 2
     pack_names = list(dict.fromkeys((manifest.get("packs") or []) + args.pack)) if args.update else args.pack
     standalone = args.standalone or bool(manifest.get("standalone"))
+    profile = args.profile or manifest.get("profile") or "full"
+    extra_agents = list(dict.fromkeys((manifest.get("agents") or []) + args.agent))
+    unknown = sorted(set(extra_agents) - set(agent_names(type_name, pack_names)))
+    if unknown:
+        print("error: unknown --agent: " + ", ".join(unknown), file=sys.stderr)
+        return 2
 
     cli = {}
     for item in args.set:
@@ -192,7 +266,7 @@ def main():
         print("error: missing required placeholders (use --set KEY=VALUE): " + ", ".join(missing), file=sys.stderr)
         return 1
 
-    plan = build_plan(type_name, pack_names, standalone, type_spec)
+    plan = build_plan(type_name, pack_names, standalone, type_spec, profile, extra_agents)
     rendered, unresolved = {}, []
     for dest, e in sorted(plan.items()):
         src = e["src"]
@@ -212,18 +286,14 @@ def main():
         path, new_hash = target / dest, sha256(text)
         if not path.exists():
             action = "created"
-        elif not args.update:
-            action = "unchanged" if dest in files and sha256(read(path)) == new_hash else "skipped"
-        elif dest not in files:
+        elif sha256(read(path)) == new_hash:
+            action = "unchanged"  # identical content (e.g. from --bootstrap) is adopted
+        elif not args.update or dest not in files:
             action = "skipped"
+        elif sha256(read(path)) == files[dest]:
+            action = "updated"
         else:
-            cur = sha256(read(path))
-            if cur == new_hash:
-                action = "unchanged"
-            elif cur == files[dest]:
-                action = "updated"
-            else:
-                action = "conflict"
+            action = "conflict"
         note = f" (overrides {plan[dest]['overrides']})" if plan[dest]["overrides"] else ""
         report[action].append(dest + note)
         if action in ("created", "updated"):
@@ -238,7 +308,8 @@ def main():
     obsolete = sorted(set(files) - set(rendered))
 
     prefix = "[dry-run] " if args.dry_run else ""
-    print(f"{prefix}aiagents {kit_version()} → {target} (type {type_name}; packs: {', '.join(pack_names) or 'none'})")
+    print(f"{prefix}aiagents {kit_version()} → {target} (type {type_name}; profile {profile}; "
+          f"packs: {', '.join(pack_names) or 'none'}; extra agents: {', '.join(extra_agents) or 'none'})")
     for action, label in (("created", "created"), ("updated", "updated"), ("unchanged", "unchanged"),
                           ("skipped", "skipped (exists, not overwritten)"), ("conflict", "conflict (modified locally, not updated)")):
         print(f"  {label}: {len(report[action])}")
@@ -253,7 +324,7 @@ def main():
     stored = {k: v for k, v in {**manifest.get("values", {}), **cli}.items()}
     mpath.write_text(json.dumps({
         "kit": "aiagents", "version": kit_version(), "type": type_name, "packs": pack_names,
-        "standalone": standalone, "values": stored, "files": dict(sorted(files.items())),
+        "standalone": standalone, "profile": profile, "agents": extra_agents, "values": stored, "files": dict(sorted(files.items())),
     }, indent=2) + "\n", encoding="utf-8")
     sync = target / "scripts" / "sync-agents.py"
     for extra in ([], ["--check"]):

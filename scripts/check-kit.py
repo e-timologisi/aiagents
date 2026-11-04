@@ -10,6 +10,8 @@ Checks:
   - every {{PLACEHOLDER}} is declared in its scope (core/placeholders.yaml + type.yaml or pack.yaml)
   - type.yaml / pack.yaml names match their directory; repo types have the required files
   - VS Code prompt files are in sync with prompts/*.md
+  - core/commands/*.md (the /setup command) parse and render for OpenCode and VS Code; /setup keeps
+    its interview rules (one question at a time, no secrets, access summary); lean profile names exist
   - third-party attribution: every directory with UPSTREAM.md has LICENSE.upstream and is listed in
     THIRD-PARTY-NOTICES.md, which reproduces every upstream MIT license in full
   - no forbidden strings: built-in generic patterns (12-digit AWS account ids, ARNs, IPv4 addresses,
@@ -22,11 +24,12 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from kitlib import KIT, PLACEHOLDER, declared, check_attribution, frontmatter, parse_yaml, scan_forbidden  # noqa: E402
+from kitlib import (KIT, LEAN_AGENTS, LEAN_SKILLS, PLACEHOLDER, check_attribution, declared,  # noqa: E402
+                    frontmatter, parse_yaml, render_command, scan_forbidden)
 
 REQUIRED_FILES = [
     "core/agents/lead.md", "core/agents/explorer.md", "core/agents/ticket-tracker.md",
-    "core/docs-templates/access-and-conflicts.md.tmpl", "core/docs-templates/work-log.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
+    "core/docs-templates/access-and-conflicts.md.tmpl", "core/commands/setup.md", "core/docs-templates/work-log.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
 ] + [f"core/skills/{s}/SKILL.md" for s in (
     "project-intake", "document-ingest", "requirements-register", "backlog-planning", "dispatch-tasks",
     "status-report", "project-state", "codebase-discovery", "project-setup", "release-checklist",
@@ -38,6 +41,8 @@ ONE_QUESTION_SKILLS = (
     "project-intake", "document-ingest", "requirements-register", "backlog-planning", "dispatch-tasks",
     "status-report", "project-state", "codebase-discovery", "task-intake", "project-setup",
 )
+SETUP_NEEDLES = ("one question at a time", "never ask for", "servers, databases and credentials are never",
+                 ".aiagents/access.md", "--profile lean", "--detect", "local-<n>", "commit locally")
 TYPE_FILES = ("type.yaml", "AGENTS.md.tmpl", "CONTRIBUTING.md.tmpl", "README.md.tmpl")
 
 
@@ -131,7 +136,7 @@ def main():
             if "\n## Access\n" not in a.read_text(encoding="utf-8"):
                 errors.append(f"{a.relative_to(KIT)}: missing '## Access' paragraph")
     lead_text = (KIT / "core" / "agents" / "lead.md").read_text(encoding="utf-8")
-    for needle in ("by CONTENT", "`Access:` line", "merge order", "mergeStateStatus"):
+    for needle in ("by CONTENT", "`Access:` line", "merge order", "mergeStateStatus", ".aiagents/access.md"):
         if needle not in lead_text:
             errors.append(f"core/agents/lead.md: missing conflict/access rule ({needle})")
     for sk in ONE_QUESTION_SKILLS:
@@ -141,6 +146,27 @@ def main():
     vs_lead = sync.render_vscode(*sync.parse(KIT / "core" / "agents" / "lead.md"))
     if "'vscode/askQuestions'" not in vs_lead:
         errors.append("lead: VS Code tools must include 'vscode/askQuestions'")
+
+    for cmd in sorted((KIT / "core" / "commands").glob("*.md")):
+        try:
+            outputs = render_command(cmd)
+        except ValueError as err:
+            errors.append(str(err).replace(str(KIT) + "/", ""))
+            continue
+        if "$ARGUMENTS" not in outputs["opencode"][1]:
+            errors.append(f"{cmd.relative_to(KIT)}: OpenCode output lacks $ARGUMENTS")
+    setup = KIT / "core" / "commands" / "setup.md"
+    if setup.exists():
+        low = setup.read_text(encoding="utf-8").lower()
+        for needle in SETUP_NEEDLES:
+            if needle not in low:
+                errors.append(f"core/commands/setup.md: missing rule text {needle!r}")
+    for a in LEAN_AGENTS:
+        if not (KIT / "core" / "agents" / f"{a}.md").exists():
+            errors.append(f"kitlib.LEAN_AGENTS: no core agent {a!r}")
+    for sk in LEAN_SKILLS:
+        if not (KIT / "core" / "skills" / sk / "SKILL.md").exists():
+            errors.append(f"kitlib.LEAN_SKILLS: no core skill {sk!r}")
 
     placeholders = set()
     for base, allowed in scopes:

@@ -9,6 +9,10 @@ A plain-language guide for the project owner. No engineering background needed.
 4. Agents never merge code, release to production, touch servers or show passwords. You (or someone you trust) do those.
 5. Everything is written down in the project's `docs/` folder, so any new chat can pick up where the last one stopped.
 
+## Before you start: /setup
+
+In your project folder run once `python3 ~/src/aiagents/scripts/apply-kit.py --target . --bootstrap`, open the project in OpenCode or VS Code and type `/setup`. It asks a few short questions one at a time (stack, name, which code host / tracker / wiki you use and how agents reach them), installs the lean kit and writes `.aiagents/access.md`. Answer `skip` to anything; nothing asks for passwords or tokens. Details: README "Quick start".
+
 ## Three ways to start
 
 All three begin with the same prompt: `prompts/00-start-here.md` (in VS Code: type `/start-here`). Keep the line that fits.
@@ -61,6 +65,8 @@ You:   yes
 ```
 
 ## First-time setup (install the kit into a repo)
+
+Recommended: `/setup` (see "Before you start" above). The manual way below installs the full profile.
 
 You need `git`, `python3` and the GitHub CLI `gh` (logged in). Then:
 
@@ -185,7 +191,10 @@ Write: `@lead resume from docs/project-state.md`. The lead reads the state file 
 | Turn an idea into a ticket | `/write-ticket` or "use the task-intake skill: …" |
 | Get a review | `/review-pr <PR URL>` |
 | Prepare a release | `/release-to-production` → then you press the release button |
-| Install the kit | `python3 ~/src/aiagents/scripts/apply-kit.py --type <type> --target . --set PROJECT_NAME=… --set ORG=… [--dry-run]` |
+| Set up the kit (recommended) | `apply-kit.py --target . --bootstrap`, then `/setup` in the AI tool |
+| Add a pack or agent later | `/setup add <pack or agent>` |
+| Change connections | `/setup access` |
+| Install the kit manually | `python3 ~/src/aiagents/scripts/apply-kit.py --type <type> --target . --set PROJECT_NAME=… --set ORG=… [--dry-run]` |
 | Update the kit in a repo | `python3 ~/src/aiagents/scripts/apply-kit.py --target . --update` |
 | Regenerate agents | `python3 scripts/sync-agents.py` |
 | Never | let agents merge, release, touch servers, or show secret values |

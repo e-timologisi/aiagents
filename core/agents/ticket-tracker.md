@@ -31,7 +31,7 @@ Ticket key; PR URLs; merge verification statement (`{{DEFAULT_BRANCH}}` content 
 - On any tool error: stop, report the error and what was already done; no destructive retries.
 
 ## Access
-Use the `Access:` line from the lead. If the tracker is missing, report that and stop: no retry loops, no invented keys, no claimed updates. Never ask for credentials you do not have.
+Use the `Access:` line from the lead (or `.aiagents/access.md`). Reach {{TRACKER_NAME}} via {{TRACKER_METHOD}} and {{WIKI_NAME}} via {{WIKI_METHOD}} only; method `manual` means prepare the text and report it. If the tracker is missing, report that and stop: no retry loops, no invented keys, no claimed updates. Never ask for credentials you do not have.
 
 ## Output
 Short report: every tracker/wiki change with keys, page ids and links; what was skipped and why; disagreements found; proposed follow-ups.
