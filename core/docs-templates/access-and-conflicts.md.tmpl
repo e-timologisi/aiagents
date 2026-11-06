@@ -41,9 +41,9 @@ People and agents may lack access to the ticket system, wiki, code host, servers
 Ticket: <KEY> (link)
 Access: tracker ✅/❌, code host ✅/❌, servers ❌, database: local only
 Goal: <one sentence>
-Repo / worktree: <path>, branch <KEY>-<slug> from origin/{{DEFAULT_BRANCH}}
+Repo / worktree: <own worktree, unique folder name>, branch <KEY>-<slug> from origin/{{DEFAULT_BRANCH}}
 Files you will touch: <list>; other agents running now touch: <list or none>
 Acceptance criteria: <list>
 Docs to update: <list>
-Report: PR URL, CI, tip SHA + `git log origin/{{DEFAULT_BRANCH}}..origin/<branch>`, docs updated, proposed status, follow-ups
+Report: as a PR comment starting `AGENT-REPORT tip=<sha>` (docs/agents/handover-rules.md): PR URL, CI ran (run link) vs ran locally, tip SHA + `git log origin/{{DEFAULT_BRANCH}}..origin/<branch>`, docs updated, proposed status, follow-ups
 ```

@@ -15,7 +15,8 @@ What a project gets:
 ## Structure
 
 ```
-core/            agents (incl. lead, explorer), commands/ (/setup source), skills, scripts/sync-agents.py, github/ templates,
+core/            agents (incl. lead, explorer), commands/ (/setup source), skills, scripts/ (sync-agents.py,
+                 handover-check.sh, check-pinned-actions.py), ci-templates/ (opt-in workflows), github/ templates,
                  docs-templates/ (+ project/: brief, requirements register, state, status report,
                  decision brief, dossier, worked examples → installed to docs/agents/templates/), placeholders.yaml
 repo-types/      backend-go, frontend-nextjs, serverless-sam, docs-hub (AGENTS section, agent overrides, skills,
@@ -97,6 +98,15 @@ Agents ask the owner **one question at a time** with a recommended answer and op
 
 All roles: OpenCode adds `question` `*` allow (structured owner questions); VS Code roles with a `tools` list also get `vscode/askQuestions` (implementers use all enabled tools).
 
+## Process gates
+
+Lessons from months of multi-repo agent work, as opt-in, tool-neutral gates (installed by the lean profile; nothing is switched on in CI without the owner):
+
+- **Handover gate** (`docs/agents/handover-rules.md`, `scripts/handover-check.sh <owner/repo> <pr>`): every implementer ends with a PR comment whose first line is `AGENT-REPORT tip=<40-char sha>`; the lead waits for CI and the review bot, runs the read-only check (open PR, `mergeStateStatus` CLEAN, 0 unresolved threads, latest run of each check green, head == reported tip), then adds the `agent-reported` label. Any push invalidates both. After the merge the lead verifies the default branch by content through the hosting API before touching the tracker.
+- **CI templates** in `docs/ci-templates/` (copies only; the project owner reads them and copies them into `.github/workflows/`): `agent-report.yml` (label + current-head report + label after report; not required by default; agents and the lead may share one account, so it enforces the process, not identity), `pinned-actions.yml` (fails on actions not pinned to a 40-hex commit SHA or docker images without a `sha256:` digest), `ticket-key.yml` (PR title key, rejects placeholder keys such as `<PREFIX>-0` or leading zeros).
+- **Pinning**: look SHAs up through the API, never copy them from memory: `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, then `uses: <owner>/<repo>@<sha> # <tag>`.
+- **Autonomy policy and decision log** (`docs/agents/autonomy-policy.md`, `docs/agents/templates/decision-log.md`): how an owner grants a standing "proceed" instruction, what it never covers (servers, secrets, DNS, cloud accounts, production releases, repository settings, other projects) and where adopted defaults are logged. Retros per step: `docs/agents/templates/retro-template.md`.
+
 ## Updating the kit and versioning
 
 - `VERSION` holds the kit version (semver); every change gets a `CHANGELOG.md` entry. Minor: new agents/skills/packs/prompts; patch: wording; major: changed placeholders or target paths.
@@ -124,6 +134,9 @@ All roles: OpenCode adds `question` `*` allow (structured owner questions); VS C
 10. **Mark legal/domain claims "to be validated by an expert"**; never invent statutory figures or external API contracts.
 11. **Parallel agents conflict.** List files per agent first, serialize overlaps, state the merge order, re-check open PRs after every merge, never merge before the final report, and verify `main` by content (not SHA).
 12. **Missing access is normal.** Check once with a cheap read-only call, say it once, pass an `Access:` line to agents, fall back to a plain work-log (`LOCAL-<n>`), never invent keys or claim updates that did not happen.
+13. **"Done" needs evidence.** Final reports are PR comments naming the tip (`AGENT-REPORT tip=<sha>`); "CI ran (run link)" is kept apart from "ran locally"; review bots comment minutes after CI, so threads are queried after waiting; findings go back to the same agent session.
+14. **Every agent gets its own worktree** with a unique folder name; SSH without a key falls back to HTTPS with the CLI credential helper, never pasted tokens.
+15. **Outages are probed from outside only**; servers are never touched without explicit approval; evidence goes to the tracker; the owner hears once what only they can do.
 
 ## Safety notes
 

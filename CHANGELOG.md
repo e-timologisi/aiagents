@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0 — 2026-11-06
+
+Process gates and lessons from months of multi-repo agent work, as generic, tool-neutral improvements. Addresses #17 (retro template), progress on #2 and #3.
+- Handover gate: new `docs/agents/handover-rules.md` (agent's `AGENT-REPORT tip=<sha>` PR comment, lead's per-PR procedure, wait for the review bot, verify the default branch by content through the hosting API, tracker updates only after a verified merge) and read-only `scripts/handover-check.sh <owner/repo> <pr> [local-clone]` (open PR, `mergeStateStatus` CLEAN, 0 unresolved threads, latest run per check name green, head == latest report tip; label as info; `--json-file` test hook).
+- Opt-in CI templates installed to `docs/ci-templates/` (never auto-enabled): `agent-report.yml` (label + current-head report from an allowed author + label after report; `rerun-on-report` job; not required by default), `pinned-actions.yml` with `scripts/check-pinned-actions.py` (40-hex SHAs, docker `sha256:` digests, flow-style/quoted keys, ignores `with`/`env` keys named `uses`), `ticket-key.yml` (`placeholder-key` rule: no key 0, no leading zeros).
+- Kit's own `agents-sync.yml` and `ci-skeleton.yml` now pin actions to SHAs verified with `gh api`.
+- New templates: `docs/agents/autonomy-policy.md`, `docs/agents/templates/decision-log.md`, `docs/agents/templates/retro-template.md`. New placeholders `AGENT_REPORT_LABEL`, `AGENT_REPORT_AUTHORS`, `MAX_PARALLEL_AGENTS` (with defaults).
+- Agents: own worktree per agent, HTTPS + CLI credential helper fallback, `CI ran (run link)` vs `ran locally`, no placeholder ticket keys, tool-doc version noted; lead: review-bot wait, handover script and label, resume the same agent session for fixes, severity routing, autonomy policy, outage rule, retros; security-reviewer: design-review mode for ADRs and two reviews for auth/session/token/crypto; domain-reviewer: calculation-heavy logic reviewed before merge; test-engineer: mutation sanity check.
+- `/setup` asks three yes/no questions (handover gate, pinned-actions guard, autonomy policy) with recommendations; lean profile installs the new files.
+- `check-kit.py`: new required files, new placeholders in use, handover script has no mutating gh/git command, all workflows and CI templates pinned, home-directory paths and hosted tracker sites added to the forbidden scan. New tests `scripts/test_gates.py`.
+
 ## 0.5.0 — 2026-11-04
 
 `/setup` command with a lean default install and a tool-neutral connections step. Addresses #2.

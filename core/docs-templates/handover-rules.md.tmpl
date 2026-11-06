@@ -1,0 +1,44 @@
+# Handover rules: from "agent says done" to a merged, verified PR
+
+Rules for the lead and every implementer agent in {{PROJECT_NAME}}. They close process gaps that cost real time: reports that named an old commit, PRs handed over with open review threads, "green" claims without a CI run, tracker updates written before the merge had landed.
+
+## 1. The agent's report (implementer)
+
+1. Work in your **own worktree** with a unique folder name (never the shared checkout), on the ticket branch.
+2. Before reporting: merge `origin/{{DEFAULT_BRANCH}}` if it moved, push, wait for CI to finish.
+3. Post the final report as a **PR comment whose first line is exactly**:
+
+   ```
+   AGENT-REPORT tip=<40-char head sha>
+   ```
+
+   followed by the report body (PR, files, `CI ran: <run link>` separate from `Ran locally: <commands>`, docs updated, follow-ups). Never write "green" without a run link.
+4. Any new push **invalidates** the report and the label: post a new `AGENT-REPORT` for the new tip.
+
+## 2. The lead's per-PR procedure
+
+1. **Never merge before the agent's report.**
+2. Wait until **CI has finished**, then wait for the **review bot** (if the project uses one): it often reviews minutes AFTER CI and again after every push. Only then query review threads.
+3. Run the gate (read-only):
+
+   ```
+   scripts/handover-check.sh {{ORG}}/<repo> <pr> [local-clone]
+   ```
+
+   CLEAN requires: PR open, `mergeStateStatus` CLEAN, 0 unresolved review threads, the **latest** run of every check name green, PR head == the tip of the latest `AGENT-REPORT`. A merged PR is NOT CLEAN (the gate is for handover). The label is reported as info.
+4. Failed required job that looks flaky: re-run it (`gh run rerun <id> --failed`) and re-check; never hand over around a red required check.
+5. Findings: send them back by **resuming the same agent session** (it has the context), not a new agent. Reviewers state severity: Blocker/High block the merge; Medium/Low become follow-up tickets.
+6. Never hand a BLOCKED or unresolved PR to the owner. When the gate is CLEAN and you verified the report independently, add the label `{{AGENT_REPORT_LABEL}}`.
+7. **After the merge**, verify `{{DEFAULT_BRANCH}}` against the reviewed tip **by content through the hosting API**, not by SHA and not only from a local clone: squash merges create new SHAs, and local clones of private repos can be stale or lack credentials. Example: `gh api repos/{{ORG}}/<repo>/compare/<reviewed-tip>...{{DEFAULT_BRANCH}} --jq '.files[].filename'` lists no PR files, or compare file contents via `gh api repos/{{ORG}}/<repo>/contents/<file>?ref=<sha>`.
+8. Write tracker/wiki updates **only after** step 7 (optionally via `ticket-tracker`).
+
+## 3. Optional CI check `agent-report`
+
+`docs/ci-templates/agent-report.yml` (opt-in; the project owner copies it into `.github/workflows/` after reading it). It passes only if the label exists, the latest valid report comment from an allowed author ({{AGENT_REPORT_AUTHORS}}) names the current head, and the label was applied after that report. A second job re-runs it when a report comment is posted, because comment-event runs attach to the default branch, not to the PR.
+
+**Honest limit:** agents and the lead may share one account. The gate enforces the **process** (report → independent check → label → nothing pushed since), not **identity**. Making `agent-report` a required check is the project owner's decision, after it has proved itself on real PRs.
+
+## 4. Git and hosting access
+
+- SSH without a key: use HTTPS with the CLI credential helper, e.g. `git -c credential.helper='!gh auth git-credential' fetch https://<host>/{{ORG}}/<repo>.git`, or the hosting API. Never paste tokens into commands, files or chat.
+- GraphQL calls can be flaky: retry once, prefer REST where it exists.

@@ -17,7 +17,23 @@ FORBIDDEN = [
     ("google oauth secret", re.compile("GOC" + "SPX")),
     ("private key", re.compile("PRIVATE" + " KEY")),
     ("password literal", re.compile(r"password\s*[:=]", re.IGNORECASE)),
+    ("home directory path", re.compile(r"/Use" r"rs/[A-Za-z]|/home/[a-z][a-z0-9_-]*/")),
+    ("hosted tracker site", re.compile(r"[A-Za-z0-9-]+\.atlassian\.net", re.IGNORECASE)),
 ]
+
+# Mutating commands that must never appear in the read-only handover gate script.
+MUTATING = re.compile(
+    r"\bgh\s+(?:pr|issue|label|release|repo|run|workflow|secret|variable)\s+"
+    r"(?:merge|edit|comment|close|create|delete|review|ready|reopen|rerun|cancel|run|set|lock|transfer)\b"
+    r"|\bgh\s+api\b[^\n]*(?:-X\s*|--method[\s=]+)(?:POST|PUT|PATCH|DELETE)"
+    r"|\bmutation\b"
+    r"|\bgit\s+(?:-C\s+\S+\s+)?(?:push|commit|merge|reset|checkout|switch|rebase|tag|fetch|pull|clean|am|apply|stash|restore|rm|mv|add|branch\s+-[dDmM])\b")
+
+
+def mutating_lines(text):
+    """(line number, line) of non-comment lines that would change a repository or the hosting side."""
+    return [(n, line) for n, line in enumerate(text.splitlines(), 1)
+            if not line.lstrip().startswith("#") and MUTATING.search(line)]
 
 
 def local_forbidden(root=KIT):
@@ -168,7 +184,12 @@ LEAN_AGENTS = ("lead", "explorer")
 LEAN_SKILLS = ("task-intake", "dispatch-tasks", "tdd", "diagnosing-bugs", "code-review", "grilling",
                "domain-modeling", "codebase-design", "pr")
 LEAN_FILES = ("AGENTS.md", "scripts/sync-agents.py", "docs/agents/interaction-standard.md",
-              "docs/agents/access-and-conflicts.md", "docs/agents/templates/work-log.md")
+              "docs/agents/access-and-conflicts.md", "docs/agents/templates/work-log.md",
+              "docs/agents/handover-rules.md", "docs/agents/autonomy-policy.md",
+              "docs/agents/templates/decision-log.md", "docs/agents/templates/retro-template.md",
+              "scripts/handover-check.sh", "scripts/check-pinned-actions.py",
+              "docs/ci-templates/agent-report.yml", "docs/ci-templates/pinned-actions.yml",
+              "docs/ci-templates/ticket-key.yml")
 COMMANDS_DIR = "core/commands"
 COMMAND_OUTPUTS = {"opencode": ".opencode/commands/{name}.md", "vscode": ".github/prompts/{name}.prompt.md"}
 ARGS_TOKEN = "<ARGUMENTS>"

@@ -1,0 +1,41 @@
+# Autonomy policy for {{PROJECT_NAME}}
+
+How the owner grants the lead a **standing instruction** to proceed without asking for each approval, and what it never covers. Without a recorded grant below, every gate in `docs/agents/how-to-use-agents.md` still needs the owner.
+
+## Grant
+
+| Field | Value |
+|---|---|
+| Granted by | <owner> |
+| Date | <YYYY-MM-DD> |
+| Scope | <e.g. "design decisions and ticket work until the first real users"> |
+| Ends | <date, event (first real user, first production release) or "until revoked"> |
+| Max parallel agents | {{MAX_PARALLEL_AGENTS}} |
+
+The owner can revoke or narrow the grant at any time with one sentence; the lead records it here.
+
+## What the lead may do under the grant
+
+- Adopt the **recommended default** for a design decision, record it in `docs/decision-log.md` (question, answer, rationale, revisit trigger, who validates) and continue. Such decisions are reversible while there are no real users; the log is the owner's review list.
+- Create tickets, dispatch agents (at most {{MAX_PARALLEL_AGENTS}} at once), run reviews and fix loops.
+- Prepare PRs up to a CLEAN handover gate (`docs/agents/handover-rules.md`).
+
+## Never covered (always ask the owner)
+
+- Servers, databases with real data, DNS, cloud accounts, billing.
+- Secrets and credentials of any kind (the owner sets them; agents refer to names only).
+- Production releases and deployments.
+- Repository or organisation settings (branch protection, required checks, permissions, visibility).
+- Other projects or repositories outside this project.
+- Legal or domain facts: still "to be validated by {{DOMAIN_EXPERT}}".
+
+## Merge guard rails (if the grant includes merging)
+
+- Merge only when `scripts/handover-check.sh` reports CLEAN and after the agent's `AGENT-REPORT`.
+- Merge in the stated order; re-check all open PRs after every merge.
+- Verify `{{DEFAULT_BRANCH}}` by content against the reviewed tip, then update the tracker.
+- Stop and ask on any red required check, unresolved Blocker/High finding or unexpected diff.
+
+## Public repositories
+
+Changes to a public repository stay generic: no names of private products, customers, people, internal URLs, ticket keys, ids, IPs or account numbers. Scan added lines before pushing.

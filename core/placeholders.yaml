@@ -38,6 +38,9 @@ defaults:
   WIKI_METHOD: "(connection method not set)"
   WIKI_SPACE: "(wiki space not set)"
   WIKI_PAGES: "(wiki mirror pages not set)"
+  AGENT_REPORT_LABEL: agent-reported
+  AGENT_REPORT_AUTHORS: collaborators
+  MAX_PARALLEL_AGENTS: "3"
   MODEL_PLANNER: github-copilot/claude-opus-5.5
   MODEL_IMPLEMENTER: github-copilot/claude-sonnet-5.5
   MODEL_QUICK: github-copilot/claude-haiku-5.5
@@ -76,6 +79,9 @@ descriptions:
   WIKI_METHOD: "How agents reach the wiki: mcp, cli, api or manual (no secrets)"
   WIKI_SPACE: Wiki space or section for mirror pages
   WIKI_PAGES: Mirror page names and ids the agent may update
+  AGENT_REPORT_LABEL: Label the lead adds after verifying an AGENT-REPORT (handover gate)
+  AGENT_REPORT_AUTHORS: "Who may post AGENT-REPORT comments: collaborators (owner/member/collaborator association) or a comma-separated list of logins"
+  MAX_PARALLEL_AGENTS: Most agents the lead runs at once under the autonomy policy
   MODEL_PLANNER: OpenCode model for planners/reviewers
   MODEL_IMPLEMENTER: OpenCode model for implementers
   MODEL_QUICK: OpenCode model for quick-tasks
