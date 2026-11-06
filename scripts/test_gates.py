@@ -196,6 +196,46 @@ class TicketKeyTest(unittest.TestCase):
                 self.assertEqual(self.run_rule(prefix, title).returncode, want)
 
 
+class RolePermissionsTest(unittest.TestCase):
+    spec = importlib.util.spec_from_file_location("sync_agents", CORE / "scripts" / "sync-agents.py")
+    sync = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sync)
+
+    def shell(self, role):
+        return [(r["resource"], r["effect"]) for r in self.sync.role_permissions(role) if r["action"] == "shell"]
+
+    def test_no_role_has_broad_shell_allow_or_stray_ask(self):
+        for role in self.sync.ROLES:
+            with self.subTest(role=role):
+                self.assertNotIn(("*", "allow"), self.shell(role))
+                self.assertEqual(self.sync.shell_rule_problems(self.sync.role_permissions(role), role), [])
+                if role != "inspector":
+                    self.assertNotIn(("*", "ask"), self.shell(role))
+
+    def test_inspector_reappends_denies_after_its_ask(self):
+        rules = self.shell("inspector")
+        ask = rules.index(("*", "ask"))
+        self.assertEqual(rules[ask + 1:], [(d, "deny") for d in self.sync.SHELL_DENY])
+
+    def test_checker_catches_bad_rules(self):
+        r = self.sync.rule
+        self.assertTrue(self.sync.shell_rule_problems([r("shell", "*", "allow")], "implementer"))
+        self.assertTrue(self.sync.shell_rule_problems([r("shell", "*", "ask")], "reviewer"))
+        self.assertTrue(self.sync.shell_rule_problems([r("shell", "*", "ask")], "inspector"))
+        self.assertTrue(self.sync.shell_rule_problems([], "inspector"))
+
+    def test_autonomy_recipe_covers_the_exceptions(self):
+        text = (CORE / "docs-templates" / "autonomy-policy.md.tmpl").read_text(encoding="utf-8")
+        for needle in ('"shell", "resource": "*", "effect": "allow"', "external_directory", "ssh *", "sudo *",
+                       "rm -rf *", "git reset --hard*", "git clean*", "git branch -D*", "docker * prune*",
+                       "gh secret *", "gh variable *", "gh repo edit*", "gh release create*", "gh workflow run *",
+                       "*prod*", "bash -", "zsh -", "sh -", "*.env", "last match wins"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, text)
+        for deny in self.sync.SHELL_DENY:
+            self.assertIn(f'"resource": "{deny}", "effect": "deny"', text)
+
+
 class InstallWiringTest(unittest.TestCase):
     def test_lean_installs_gates_as_opt_in_copies(self):
         with tempfile.TemporaryDirectory() as d:

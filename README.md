@@ -92,9 +92,11 @@ Agents ask the owner **one question at a time** with a recommended answer and op
 | `implementer` | edit allowed | all enabled tools |
 | `reviewer` | no edits; read-only git/gh | `read`, `search` |
 | `planner` | as reviewer | `read`, `search`, `web` |
-| `inspector` | no edits; every shell command asks | `read`, `search`, `execute` |
+| `inspector` | no edits; every shell command asks; hard shell denies re-appended after the ask | `read`, `search`, `execute` |
 | `docs` | edits only `*.md` | `read`, `search`, `edit`, `todo` |
 | `orchestrator` | `mode: primary`; edits only `*.md` and `docs/*`; read-only git/gh incl. `gh issue list`, `gh pr list/checks`; `subagent` `*` allowed | `read`, `search`, `edit`, `web`, `todo`, `agent` + `agents: ['*']` (Local harness subagents; `edit` cannot be path-limited in VS Code) |
+
+OpenCode rules are ordered and the last match wins; agent rules come after the global ones. So no role carries a broad shell allow, and only the inspector has its own `shell *` ask; every other role uses the global shell rules (see the permissions recipe in `docs/agents/autonomy-policy.md`).
 
 All roles: OpenCode adds `question` `*` allow (structured owner questions); VS Code roles with a `tools` list also get `vscode/askQuestions` (implementers use all enabled tools).
 
@@ -104,6 +106,8 @@ Lessons from months of multi-repo agent work, as opt-in, tool-neutral gates (ins
 
 - **Handover gate** (`docs/agents/handover-rules.md`, `scripts/handover-check.sh <owner/repo> <pr>`): every implementer ends with a PR comment whose first line is `AGENT-REPORT tip=<40-char sha>`; the lead waits for CI and the review bot, runs the read-only check (open PR, `mergeStateStatus` CLEAN, 0 unresolved threads, latest run of each check green, head == reported tip), then adds the `agent-reported` label. Any push invalidates both. After the merge the lead verifies the default branch by content through the hosting API before touching the tracker.
 - **CI templates** in `docs/ci-templates/` (copies only; the project owner reads them and copies them into `.github/workflows/`): `agent-report.yml` (label + current-head report + label after report; not required by default; agents and the lead may share one account, so it enforces the process, not identity), `pinned-actions.yml` (fails on actions not pinned to a 40-hex commit SHA or docker images without a `sha256:` digest), `ticket-key.yml` (PR title key, rejects placeholder keys such as `<PREFIX>-0` or leading zeros).
+- **Handover pitfalls** (in `handover-rules.md`, the lead and the dispatch template): "no checks yet" right after opening is PENDING, not done; before the label the `agent-report` check is red and the merge state `UNSTABLE` by design ("not blocked" = anything but `BLOCKED`/`DIRTY`); post the `AGENT-REPORT` first, then the check output as a separate comment; review bots re-review every push, so agents batch fixes and stop when the final tip is reviewed with no open threads; shared index files are listed as "touched by others"; reserved keys must exist before the merge; decisions that cannot go into an ADR yet go to the decision log plus a follow-up ticket.
+- **Permissions for autonomous runs** (`autonomy-policy.md`, OpenCode v2): global shell allow, then ordered ask/deny exceptions (remote access, irreversible local operations, secrets, settings, releases and workflow dispatches, pipe-to-shell), hard denies for force pushes and repository deletion, `.env` reads ask. Generated agent roles never carry a broad shell allow; only the inspector re-asks `shell *` and re-appends the denies (enforced by `check-kit.py`).
 - **Pinning**: look SHAs up through the API, never copy them from memory: `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, then `uses: <owner>/<repo>@<sha> # <tag>`.
 - **Autonomy policy and decision log** (`docs/agents/autonomy-policy.md`, `docs/agents/templates/decision-log.md`): how an owner grants a standing "proceed" instruction, what it never covers (servers, secrets, DNS, cloud accounts, production releases, repository settings, other projects) and where adopted defaults are logged. Retros per step: `docs/agents/templates/retro-template.md`.
 

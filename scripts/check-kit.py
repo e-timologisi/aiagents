@@ -17,6 +17,8 @@ Checks:
   - process gates: handover-rules/autonomy/decision-log/retro templates, CI templates and scripts exist;
     new placeholders are used; handover-check.sh contains no mutating gh/git command; every workflow
     and CI template pins actions to a commit SHA
+  - generated role permissions never contain a broad shell allow; only the inspector re-asks `shell *`
+    and re-appends the shell denies after it
   - no forbidden strings: built-in generic patterns (12-digit AWS account ids, ARNs, IPv4 addresses,
     GitHub tokens, Google OAuth secrets, private keys, password literals, home directory paths,
     hosted tracker sites) plus optional local regexes
@@ -53,7 +55,7 @@ ONE_QUESTION_SKILLS = (
 SETUP_NEEDLES = ("one question at a time", "never ask for", "servers, databases and credentials are never",
                  ".aiagents/access.md", "--profile lean", "--detect", "local-<n>", "commit locally",
                  "handover gate", "pinned-actions guard", "autonomy policy")
-NEW_PLACEHOLDERS = ("AGENT_REPORT_LABEL", "AGENT_REPORT_AUTHORS", "MAX_PARALLEL_AGENTS")
+NEW_PLACEHOLDERS = ("AGENT_REPORT_LABEL", "AGENT_REPORT_AUTHORS", "MAX_PARALLEL_AGENTS", "EXPECTED_CHECKS")
 TYPE_FILES = ("type.yaml", "AGENTS.md.tmpl", "CONTRIBUTING.md.tmpl", "README.md.tmpl")
 
 
@@ -118,7 +120,10 @@ def main():
         for a in sorted((base / "agents").glob("*.md")) if (base / "agents").is_dir() else []:
             agents += 1
             try:
-                sync.parse(a)
+                meta, _ = sync.parse(a)
+                rules = sync.role_permissions(meta["role"]) + sync.extra_rules(meta, a)
+                for problem in sync.shell_rule_problems(rules, meta["role"]):
+                    errors.append(f"{a.relative_to(KIT)}: permissions: {problem}")
             except ValueError as err:
                 errors.append(str(err).replace(str(KIT) + "/", ""))
             lines = len(a.read_text(encoding="utf-8").splitlines())
@@ -153,7 +158,8 @@ def main():
     lead_text = (KIT / "core" / "agents" / "lead.md").read_text(encoding="utf-8")
     for needle in ("by CONTENT", "`Access:` line", "merge order", "mergeStateStatus", ".aiagents/access.md",
                    "AGENT-REPORT tip=", "handover-check.sh", "review bot", "RESUMING", "own worktree",
-                   "autonomy-policy.md", "Infrastructure outage"):
+                   "autonomy-policy.md", "Infrastructure outage", "PENDING", "UNSTABLE",
+                   "touched by others", "reserved"):
         if needle not in lead_text:
             errors.append(f"core/agents/lead.md: missing conflict/access rule ({needle})")
     for sk in ONE_QUESTION_SKILLS:

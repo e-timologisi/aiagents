@@ -138,6 +138,7 @@ The lead lists which files each agent touches before running agents in parallel,
 2. The lead waits for CI, then a few minutes for any review bot, then checks: `scripts/handover-check.sh <owner/repo> <pr>`. It says `CLEAN` or lists what is missing.
 3. Only when it is CLEAN and the lead has checked the report does it add the `agent-reported` label and hand the PR to you. A new push means a new report.
 4. After you merge, the lead checks the main branch by content through the code host's API, and only then updates the tracker.
+Right after a PR opens, checks may be missing for ~10 minutes: that means "wait", not "done". Before the label is added, the `agent-report` check is red on purpose.
 Optional CI checks live in `docs/ci-templates/`. Nothing there runs until you copy a file into `.github/workflows/` after reading it. Making a check required is your call, once it has proved itself.
 
 ## Letting the lead decide on its own (autonomy policy)

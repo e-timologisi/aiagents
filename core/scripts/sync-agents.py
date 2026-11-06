@@ -37,36 +37,44 @@ READ_ONLY_SHELL = (
 ORCHESTRATOR_SHELL = READ_ONLY_SHELL + ("gh issue list *", "gh pr list *", "gh pr checks *")
 
 
+# Hard shell denies (force pushes, repository deletion). They live in the global config; a role that
+# re-asks `shell *` (inspector) must re-append them AFTER its ask, because the last matching rule wins.
+SHELL_DENY = (
+    "git push --force*", "git push * --force*", "git push -f*", "git push * -f", "git push * -f *",
+    "git push --force-with-lease*", "git push * --force-with-lease*", "git push * +*", "gh repo delete*",
+)
+
+
 def rule(action, resource, effect):
     return {"action": action, "resource": resource, "effect": effect}
 
 
 def role_permissions(role):
-    """OpenCode V2 ordered rules (last match wins); every role may ask the owner (`question`)."""
+    """OpenCode V2 ordered rules (last match wins); every role may ask the owner (`question`).
+
+    Agent rules are appended AFTER the global rules, so a broad agent-level rule overrides global
+    exceptions. Roles therefore never carry a broad `shell *` allow, and only the inspector carries a
+    broad `shell *` ask (followed by SHELL_DENY); other roles rely on the global shell rules.
+    """
     return _role_rules(role) + [rule("question", "*", "allow")]
 
 
 def _role_rules(role):
     if role in ("reviewer", "planner"):
+        return [rule("edit", "*", "deny")] + [rule("shell", c, "allow") for c in READ_ONLY_SHELL]
+    if role == "inspector":  # keeps `shell ask` on purpose: every remote/read command is approved
         return [rule("edit", "*", "deny"), rule("shell", "*", "ask")] + [
-            rule("shell", c, "allow") for c in READ_ONLY_SHELL
+            rule("shell", c, "deny") for c in SHELL_DENY
         ]
-    if role == "inspector":
-        return [rule("edit", "*", "deny"), rule("shell", "*", "ask")]
-    if role == "orchestrator":  # docs-only edits, read-only shell, may launch every subagent
+    if role == "orchestrator":  # docs-only edits, read-only shell allows, may launch every subagent
         return [
             rule("edit", "*", "deny"),
             rule("edit", "*.md", "allow"),
             rule("edit", "docs/*", "allow"),
-            rule("shell", "*", "ask"),
         ] + [rule("shell", c, "allow") for c in ORCHESTRATOR_SHELL] + [rule("subagent", "*", "allow")]
     if role == "docs":
-        return [
-            rule("edit", "*", "deny"),
-            rule("edit", "*.md", "allow"),
-            rule("shell", "*", "ask"),
-        ]
-    return [rule("edit", "*", "allow")]  # implementer: full (global rules still apply)
+        return [rule("edit", "*", "deny"), rule("edit", "*.md", "allow")]
+    return [rule("edit", "*", "allow")]  # implementer: full edit (global shell rules still apply)
 
 
 def vscode_tools(role):
@@ -120,6 +128,27 @@ def parse(path):
         raise ValueError(f"{path}: mode must be one of {MODES}")
     body = "\n".join(lines[end + 1:]).strip() + "\n"
     return meta, body
+
+
+def shell_rule_problems(rules, role):
+    """Problems in an agent's generated rules: broad shell allow, stray broad ask, missing re-denies."""
+    problems, asked = [], False
+    for i, r in enumerate(rules):
+        if r["action"] != "shell" or r["resource"] not in ("*", "**"):
+            continue
+        if r["effect"] == "allow":
+            problems.append("broad `shell *` allow (would override every global ask/deny)")
+        elif r["effect"] == "ask":
+            if role != "inspector":
+                problems.append("broad `shell *` ask outside the inspector role (global rules apply)")
+            later = {x["resource"] for x in rules[i + 1:] if x["action"] == "shell" and x["effect"] == "deny"}
+            missing = [d for d in SHELL_DENY if d not in later]
+            if missing:
+                problems.append("`shell *` ask not followed by the shell denies: " + ", ".join(missing))
+            asked = True
+    if role == "inspector" and not asked:
+        problems.append("inspector must keep `shell *` ask")
+    return problems
 
 
 def extra_rules(meta, path):

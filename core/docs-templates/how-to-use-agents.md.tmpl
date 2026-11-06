@@ -87,12 +87,12 @@ Body sections: **Read first**, **Workflow**, **Rules**, **Output**, **Handoff** 
 
 | Role | OpenCode rules | VS Code `tools` |
 |---|---|---|
-| `reviewer` | edit deny; shell ask; read-only git/gh allowed | `read`, `search` |
+| `reviewer` | edit deny; global shell rules apply; read-only git/gh allowed | `read`, `search` |
 | `planner` | as reviewer | `read`, `search`, `web` |
-| `inspector` | edit deny; shell always ask | `read`, `search`, `execute` |
-| `docs` | edit only `*.md`; shell ask | `read`, `search`, `edit`, `todo` |
+| `inspector` | edit deny; shell always ask, then the hard shell denies re-appended | `read`, `search`, `execute` |
+| `docs` | edit only `*.md`; global shell rules apply | `read`, `search`, `edit`, `todo` |
 | `implementer` | edit allow | all enabled tools |
-| `orchestrator` | mode primary; edit only `*.md`, `docs/*`; shell ask + read-only git/gh (incl. `gh issue list`, `gh pr list/checks`); subagent `*` allow | `read`, `search`, `edit`, `web`, `todo`, `agent` + `agents: ['*']` (VS Code `edit` cannot be limited to docs: the lead's instructions enforce it) |
+| `orchestrator` | mode primary; edit only `*.md`, `docs/*`; global shell rules + read-only git/gh allows (incl. `gh issue list`, `gh pr list/checks`); subagent `*` allow | `read`, `search`, `edit`, `web`, `todo`, `agent` + `agents: ['*']` (VS Code `edit` cannot be limited to docs: the lead's instructions enforce it) |
 
 All roles: OpenCode adds `question` `*` allow (structured owner questions); VS Code roles with a `tools` list also get `vscode/askQuestions` (implementers use all enabled tools).
 
