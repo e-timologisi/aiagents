@@ -23,7 +23,10 @@ defaults:
   DOMAIN_NAME: "business domain"
   DOMAIN_EXPERT: "a domain expert"
   DOMAIN_RULES: "docs/rules/*.md"
+  CODE_HOST_NAME: "(code host not set)"
+  CODE_HOST_METHOD: "(connection method not set)"
   TRACKER_NAME: "the issue tracker"
+  TRACKER_METHOD: "(connection method not set)"
   TRACKER_URL: "(tracker URL not set)"
   TRACKER_PROJECT: "(tracker project not set)"
   TRACKER_LABEL: "(tracker label not set)"
@@ -31,6 +34,8 @@ defaults:
   TRACKER_STATUSES: "To Do -> In Progress -> In Review -> Done"
   TRACKER_IDS: "(tracker ids not set)"
   WIKI_NAME: "the wiki"
+  WIKI_URL: "(wiki URL not set)"
+  WIKI_METHOD: "(connection method not set)"
   WIKI_SPACE: "(wiki space not set)"
   WIKI_PAGES: "(wiki mirror pages not set)"
   MODEL_PLANNER: github-copilot/claude-opus-5.5
@@ -56,6 +61,9 @@ descriptions:
   DOMAIN_NAME: Domain reviewed by domain-reviewer
   DOMAIN_EXPERT: Who validates legal/domain claims
   DOMAIN_RULES: Rule files domain-reviewer reads
+  CODE_HOST_NAME: Code host recorded by /setup (for example GitHub, GitLab, other, none)
+  CODE_HOST_METHOD: "How agents reach the code host: mcp, cli, api or manual (no secrets)"
+  TRACKER_METHOD: "How agents reach the tracker: mcp, cli, api or manual (no secrets)"
   TRACKER_NAME: Name of the ticket system the ticket-tracker agent updates (for example Jira); GitHub Issues work without this agent
   TRACKER_URL: Base URL of the tracker site
   TRACKER_PROJECT: Tracker project the agent may touch (it refuses every other project)
@@ -64,6 +72,8 @@ descriptions:
   TRACKER_STATUSES: Allowed status path, in order
   TRACKER_IDS: Fixed tracker ids the agent needs (cloud/site id, epic keys); no secrets
   WIKI_NAME: Name of the wiki the agent mirrors docs to (for example Confluence)
+  WIKI_URL: Base URL of the wiki or docs site (no secrets)
+  WIKI_METHOD: "How agents reach the wiki: mcp, cli, api or manual (no secrets)"
   WIKI_SPACE: Wiki space or section for mirror pages
   WIKI_PAGES: Mirror page names and ids the agent may update
   MODEL_PLANNER: OpenCode model for planners/reviewers

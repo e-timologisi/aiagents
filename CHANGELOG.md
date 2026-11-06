@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 — 2026-11-04
+
+`/setup` command with a lean default install and a tool-neutral connections step. Addresses #2.
+- New single source `core/commands/setup.md`, rendered at install time to `.opencode/commands/setup.md` (OpenCode) and `.github/prompts/setup.prompt.md` (VS Code). Interview: one question at a time with a recommended answer, `skip` everywhere, detection first, no secrets, servers/databases/credentials never asked; connections: code host, ticket tracker, wiki and the method for each (`mcp`, `cli`, `api`, `manual`) with generic login and read-only check; documented fallbacks; writes `.aiagents/access.md`.
+- `apply-kit.py`: `--profile lean|full` (default full, unchanged), `--agent`, `--bootstrap` (command files only), `--detect` (read-only JSON). Manifest stores `profile` and `agents`; `--update` keeps them. Identical existing files are adopted as unchanged.
+- New placeholders `CODE_HOST_NAME`, `CODE_HOST_METHOD`, `TRACKER_METHOD`, `WIKI_URL`, `WIKI_METHOD` (all with defaults); used by access-and-conflicts and `ticket-tracker`.
+- `lead` reads `.aiagents/access.md` at session start; `check-kit.py` checks the command source, its rules and the lean profile names; new tests `scripts/test_setup.py`; CI smoke test also installs the lean profile.
+- README quick start leads with `/setup`; HOWTO updated.
+
 ## 0.4.0 — 2026-11-01
 
 Parallel-work conflict prevention, access fallback and a generic tracker agent. Addresses #14, #15, #16.

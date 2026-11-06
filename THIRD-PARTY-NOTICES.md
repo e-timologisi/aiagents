@@ -67,6 +67,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Ideas adapted without copying text
+
+- `core/commands/setup.md` (the `/setup` interview) adapts the idea of a setup step that asks which issue tracker and docs layout a repo uses from mattpocock/skills `setup-matt-pocock-skills` (MIT, license above). No upstream text was copied; the wording is the kit's own.
+
 ## Provenance
 
 Compared programmatically on 2026-10-30 (difflib ratio on whitespace-normalised text without

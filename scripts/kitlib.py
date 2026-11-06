@@ -159,3 +159,128 @@ def check_attribution(root):
         if notices and f"`{rel}/`" not in notices:
             errors.append(f"{rel}: not listed in {NOTICES_FILE}")
     return errors
+
+
+# --- install profiles, /setup command and repo detection -------------------------------------
+
+PROFILES = ("lean", "full")
+LEAN_AGENTS = ("lead", "explorer")
+LEAN_SKILLS = ("task-intake", "dispatch-tasks", "tdd", "diagnosing-bugs", "code-review", "grilling",
+               "domain-modeling", "codebase-design", "pr")
+LEAN_FILES = ("AGENTS.md", "scripts/sync-agents.py", "docs/agents/interaction-standard.md",
+              "docs/agents/access-and-conflicts.md", "docs/agents/templates/work-log.md")
+COMMANDS_DIR = "core/commands"
+COMMAND_OUTPUTS = {"opencode": ".opencode/commands/{name}.md", "vscode": ".github/prompts/{name}.prompt.md"}
+ARGS_TOKEN = "<ARGUMENTS>"
+
+
+def lean_keep(dest, origin, agents):
+    """True when a planned file belongs to the lean profile (packs always stay complete)."""
+    if origin.startswith("pack:") or dest in LEAN_FILES or dest.startswith("docs/rules/"):
+        return True
+    if dest.startswith("agents/"):
+        return dest[len("agents/"):-len(".md")] in agents
+    if dest.startswith(".agents/skills/"):
+        return dest.split("/")[2] in LEAN_SKILLS
+    return False
+
+
+def parse_command(path):
+    """Command source: flat frontmatter (name, description, argument-hint) + Markdown body."""
+    text = pathlib.Path(path).read_text(encoding="utf-8")
+    meta = frontmatter(path)
+    if meta is None or not text.startswith("---\n"):
+        raise ValueError(f"{path}: missing frontmatter")
+    for key in ("name", "description", "argument-hint"):
+        if not meta.get(key):
+            raise ValueError(f"{path}: frontmatter needs {key}")
+    if meta["name"] != pathlib.Path(path).stem:
+        raise ValueError(f"{path}: name must equal the file name")
+    body = text.split("\n---\n", 1)[1].lstrip("\n")
+    if ARGS_TOKEN not in body:
+        raise ValueError(f"{path}: body must contain {ARGS_TOKEN}")
+    return meta, body
+
+
+def _q(s):
+    return "'" + s.replace("'", "''") + "'"
+
+
+def render_command(path):
+    """Return {tool: (relative output path, text)} for OpenCode and VS Code from one source.
+    OpenCode: https://opencode.ai/docs/commands/ (`$ARGUMENTS`); VS Code prompt files:
+    https://code.visualstudio.com/docs/agent-customization/prompt-files (text after the name)."""
+    meta, body = parse_command(path)
+    name, src = meta["name"], f"{COMMANDS_DIR}/{pathlib.Path(path).name}"
+    oc = "\n".join(["---", f"description: {_q(meta['description'])}", "---",
+                    f"<!-- GENERATED from {src} of the aiagents kit; do not edit -->",
+                    body.replace(ARGS_TOKEN, "$ARGUMENTS")])
+    vs = "\n".join(["---", f"name: {name}", f"description: {_q(meta['description'])}",
+                    f"argument-hint: {_q(meta['argument-hint'])}", "agent: agent", "---",
+                    f"<!-- GENERATED from {src} of the aiagents kit; do not edit -->",
+                    body.replace(ARGS_TOKEN, "the text the user typed after the command name (may be empty)")])
+    return {"opencode": (COMMAND_OUTPUTS["opencode"].format(name=name), oc),
+            "vscode": (COMMAND_OUTPUTS["vscode"].format(name=name), vs)}
+
+
+PACK_KEYWORDS = {
+    "payroll-gr": ("payroll", "payslip", "salary"),
+    "multi-tenant-saas": ("tenant", "multi-tenant", "row level security", "row-level security"),
+    "postgres-infra": ("postgres", "pgx", "psycopg"),
+    "aws-serverless-cost": ("aws::serverless", "aws-sdk", "aws-lambda", "aws sam", "samconfig"),
+    "auth-sessions-mfa": ("totp", "mfa", "two-factor", "session cookie"),
+}
+EXTRA_AGENTS_CODE = ("developer", "test-engineer", "security-reviewer", "architect", "quick-tasks")
+EXTRA_AGENTS_DOCS = ("architect", "quick-tasks")
+_SCAN_FILES = ("README.md", "AGENTS.md", "go.mod", "package.json", "template.yaml", "template.yml",
+               "samconfig.toml", "docker-compose.yml", "compose.yaml")
+
+
+def _git_remote(root):
+    cfg = root / ".git" / "config"
+    if not cfg.is_file():
+        return None
+    m = re.search(r'\[remote "origin"\][^\[]*?url\s*=\s*(\S+)', cfg.read_text(encoding="utf-8", errors="replace"))
+    return m.group(1) if m else None
+
+
+def detect(target):
+    """Read-only guesses for /setup: repo type, name, owner, AI tool, relevant packs and agents.
+    Never reads secrets: only well-known manifest files (first 64 KiB) and .git/config."""
+    root = pathlib.Path(target).resolve()
+    types = []
+    if (root / "go.mod").is_file():
+        types.append("backend-go")
+    pkg = root / "package.json"
+    if any(root.glob("next.config.*")) or (pkg.is_file() and '"next"' in pkg.read_text(encoding="utf-8", errors="replace")):
+        types.append("frontend-nextjs")
+    if any((root / f).is_file() for f in ("template.yaml", "template.yml", "samconfig.toml")):
+        types.append("serverless-sam")
+    if not types:
+        types.append("docs-hub")
+    remote = _git_remote(root)
+    name, owner = root.name, None
+    if remote:
+        m = re.search(r"[:/]([^/:]+)/([^/]+?)(?:\.git)?/?$", remote)
+        if m:
+            owner, name = m.group(1), m.group(2)
+    host = None
+    if remote:
+        m = re.search(r"(?:@|://)(?:[^@/]+@)?([^/:]+)", remote)
+        host = m.group(1) if m else None
+    tools = []
+    if (root / ".opencode").is_dir() or any(root.glob("opencode.json*")):
+        tools.append("opencode")
+    if (root / ".vscode").is_dir() or (root / ".github" / "copilot-instructions.md").is_file():
+        tools.append("vscode")
+    blob = ""
+    for f in _SCAN_FILES:
+        p = root / f
+        if p.is_file():
+            blob += p.read_text(encoding="utf-8", errors="replace")[:65536].lower() + "\n"
+    packs = sorted(k for k, words in PACK_KEYWORDS.items() if any(w in blob for w in words))
+    if "serverless-sam" in types and "aws-serverless-cost" not in packs:
+        packs.append("aws-serverless-cost")
+    agents = list(EXTRA_AGENTS_DOCS if types == ["docs-hub"] else EXTRA_AGENTS_CODE)
+    return {"types": types, "type": types[0], "project_name": name, "owner": owner,
+            "code_host": host, "ai_tools": tools, "packs": sorted(packs), "agents": agents}

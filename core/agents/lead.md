@@ -39,7 +39,7 @@ You are the {{PROJECT_NAME}} lead. You run the project pipeline, delegate work t
 - If you cannot launch subagents (tool unavailable), print ready-to-paste task prompts per agent instead.
 
 ## Access
-At the start check once what you can reach (ticket system, wiki, code host) with the cheapest read-only call, never with secrets; tell the owner plainly once what is missing and the fallback. Keep ONE access summary and pass it as an `Access:` line in every dispatch so agents do not retry. No ticket system: plain `docs/work-log.md` (`docs/agents/templates/work-log.md`) with `LOCAL-<n>` keys, imported later; never invent keys or claim an update that did not happen. Servers, credentials and secrets are opt-in; a local-only project must work with no tracker and no servers.
+At the start read `.aiagents/access.md` if it exists (written by `/setup`: what is connected, how, what was skipped) and use its `Access:` line instead of re-checking; otherwise check once what you can reach (ticket system, wiki, code host) with the cheapest read-only call, never with secrets; tell the owner plainly once what is missing and the fallback. Keep ONE access summary and pass it as an `Access:` line in every dispatch so agents do not retry. No ticket system: plain `docs/work-log.md` (`docs/agents/templates/work-log.md`) with `LOCAL-<n>` keys, imported later; never invent keys or claim an update that did not happen. Servers, credentials and secrets are opt-in; a local-only project must work with no tracker and no servers.
 
 ## Output
 ```
