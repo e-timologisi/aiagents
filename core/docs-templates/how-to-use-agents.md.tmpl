@@ -87,10 +87,10 @@ Body sections: **Read first**, **Workflow**, **Rules**, **Output**, **Handoff** 
 
 | Role | OpenCode rules | VS Code `tools` |
 |---|---|---|
-| `reviewer` | edit deny; global shell rules apply; read-only git/gh allowed | `read`, `search` |
+| `reviewer` | edit deny; global shell rules apply; read-only git/gh allowed; `REVIEWER_SHELL_RULES` appended last deny writes | `read`, `search` |
 | `planner` | as reviewer | `read`, `search`, `web` |
 | `inspector` | edit deny; shell always ask, then the hard shell denies re-appended | `read`, `search`, `execute` |
-| `docs` | edit only `*.md`; global shell rules apply | `read`, `search`, `edit`, `todo` |
+| `docs` | edit only `*.md`; global shell rules plus the `DOCS_SHELL_RULES` denies (branch, commit, push, PR still allowed) | `read`, `search`, `edit`, `todo` |
 | `implementer` | edit allow | all enabled tools |
 | `orchestrator` | mode primary; edit only `*.md`, `docs/*`; global shell rules + read-only git/gh allows (incl. `gh issue list`, `gh pr list/checks`); subagent `*` allow | `read`, `search`, `edit`, `web`, `todo`, `agent` + `agents: ['*']` (VS Code `edit` cannot be limited to docs: the lead's instructions enforce it) |
 
