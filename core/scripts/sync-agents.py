@@ -6,7 +6,8 @@ Outputs: .opencode/agents/<name>.md       (OpenCode V2 Markdown agent)
          .github/agents/<name>.agent.md   (VS Code custom agent)
 
 Usage:   python3 scripts/sync-agents.py [--check] [--root DIR]
-  --check  write nothing; exit 1 if any output is missing, stale or orphaned.
+  --check  write nothing; exit 1 if any output is missing, stale or orphaned, or if DENY_SHELL
+           differs from the shell deny rules of an existing opencode.json (drift check).
 
 Repo-agnostic: copy this file verbatim into any repo. Standard library only.
 
@@ -37,12 +38,76 @@ READ_ONLY_SHELL = (
 ORCHESTRATOR_SHELL = READ_ONLY_SHELL + ("gh issue list *", "gh pr list *", "gh pr checks *")
 
 
-# Hard shell denies (force pushes, repository deletion). They live in the global config; a role that
-# re-asks `shell *` (inspector) must re-append them AFTER its ask, because the last matching rule wins.
-SHELL_DENY = (
-    "git push --force*", "git push * --force*", "git push -f*", "git push * -f", "git push * -f *",
-    "git push --force-with-lease*", "git push * --force-with-lease*", "git push * +*", "gh repo delete*",
+# Hard shell denies: force pushes in every form (-f, --force*, incl. --force-with-lease, + refspec,
+# also with options before `push` such as `git -C x push`) and repository deletion. Keep this tuple
+# EQUAL to the shell deny rules of the global config (opencode.json); `--check` fails on drift.
+# A role that re-asks `shell *` (inspector) re-appends them AFTER its ask (the last match wins).
+DENY_SHELL = (
+    "git push --force*", "git push -f *", "git push * --force*", "git push * -f", "git push * -f *",
+    "git push +*", "git push * +*",
+    "git * push --force*", "git * push -f *", "git * push * --force*", "git * push * -f",
+    "git * push * -f *", "git * push +*", "git * push * +*",
+    "gh repo delete *",
 )
+
+_GIT_FLOW = ("switch", "checkout", "add", "commit", "push")
+_GIT_OTHER = ("merge", "rebase", "reset", "stash", "rm", "mv", "tag", "restore", "cherry-pick",
+              "revert", "pull", "clean", "apply", "am")
+_BRANCH_WRITE = ("-d", "-D", "-f", "-m", "-M", "-c", "-C", "--delete", "--force", "--move",
+                 "--copy", "-u", "--set-upstream-to", "--unset-upstream", "--edit-description")
+_BRANCH_READ_EXACT = ("", " -v", " -vv", " -a", " -r", " --show-current")  # no arguments: list only
+_BRANCH_READ_PREFIX = ("--list*", "--contains *", "--merged *", "--no-merged *")
+_HTTP_WRITES = ("POST", "PUT", "PATCH", "DELETE")
+_GH_COMMON = ("gh pr merge*", "gh pr edit*", "gh pr close*", "gh pr review*", "gh issue *",
+              "gh release *", "gh workflow *", "gh repo *", "gh secret *", "gh variable *", "gh label *")
+_FILES = ("rm *", "mv *", "cp *", "tee *", "sed -i*", "sed * -i*", "sed --in-place*", "sed * --in-place*")
+
+
+def _git_denies(subs):
+    # Whole subcommand only (`git merge *`, which also matches bare `git merge`), so `git merge-base`
+    # and `git diff -- tags.md` stay allowed. `git -C x <sub>` / `git -c k=v <sub>` are NOT covered:
+    # a wildcard spanning arguments would also deny reads such as `git -C x log --grep merge`.
+    return [f"git {sub} *" for sub in subs]
+
+
+def _gh_api_denies():
+    flags = ("-X", "--method")
+    return ([f"gh api {f} {m}*" for f in flags for m in _HTTP_WRITES]
+            + [f"gh api * {f} {m}*" for f in flags for m in _HTTP_WRITES] + ["gh api *--input*"])
+
+
+def _deny(patterns):
+    return [(c, "deny") for c in patterns]
+
+
+# Read-only roles (reviewer, planner): appended LAST so these agent-level denies win over the global
+# allow. Reads (gh pr diff/view, gh api GET, git show/log/diff, cat, grep, ls) stay allowed.
+REVIEWER_SHELL_RULES = tuple(
+    _deny(_git_denies(_GIT_FLOW + _GIT_OTHER))
+    + _deny(["git branch *"])
+    + [(f"git branch{f}", "allow") for f in _BRANCH_READ_EXACT]
+    + [(f"git branch {f}", "allow") for f in _BRANCH_READ_PREFIX]
+    + _deny(list(_GH_COMMON) + ["gh pr create*", "gh pr comment*"] + _gh_api_denies() + list(_FILES))
+)
+
+# docs role: still branches, commits, pushes, opens a PR, comments and merges the remote default
+# branch into its own branch; everything else of the reviewer list stays denied (cp allowed).
+DOCS_SHELL_RULES = tuple(
+    _deny(_git_denies(_GIT_OTHER))
+    + [("git merge origin/*", "allow"), ("git merge --no-edit origin/*", "allow")]
+    + _deny([f"git branch {f}*" for f in _BRANCH_WRITE])
+    + _deny(list(_GH_COMMON) + _gh_api_denies() + [f for f in _FILES if f != "cp *"])
+)
+
+
+def global_shell_denies(root):
+    """Shell deny patterns of the repo's opencode.json, or None when there is no such file."""
+    cfg_path = pathlib.Path(root) / "opencode.json"
+    if not cfg_path.exists():
+        return None
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    return [r["resource"] for r in cfg.get("permissions", [])
+            if r.get("action") == "shell" and r.get("effect") == "deny"]
 
 
 def rule(action, resource, effect):
@@ -54,17 +119,19 @@ def role_permissions(role):
 
     Agent rules are appended AFTER the global rules, so a broad agent-level rule overrides global
     exceptions. Roles therefore never carry a broad `shell *` allow, and only the inspector carries a
-    broad `shell *` ask (followed by SHELL_DENY); other roles rely on the global shell rules.
+    broad `shell *` ask (followed by DENY_SHELL); reviewer/planner get REVIEWER_SHELL_RULES and docs
+    DOCS_SHELL_RULES appended last; other roles rely on the global shell rules.
     """
     return _role_rules(role) + [rule("question", "*", "allow")]
 
 
 def _role_rules(role):
     if role in ("reviewer", "planner"):
-        return [rule("edit", "*", "deny")] + [rule("shell", c, "allow") for c in READ_ONLY_SHELL]
+        return ([rule("edit", "*", "deny")] + [rule("shell", c, "allow") for c in READ_ONLY_SHELL]
+                + [rule("shell", c, e) for c, e in REVIEWER_SHELL_RULES])
     if role == "inspector":  # keeps `shell ask` on purpose: every remote/read command is approved
         return [rule("edit", "*", "deny"), rule("shell", "*", "ask")] + [
-            rule("shell", c, "deny") for c in SHELL_DENY
+            rule("shell", c, "deny") for c in DENY_SHELL
         ]
     if role == "orchestrator":  # docs-only edits, read-only shell allows, may launch every subagent
         return [
@@ -73,7 +140,8 @@ def _role_rules(role):
             rule("edit", "docs/*", "allow"),
         ] + [rule("shell", c, "allow") for c in ORCHESTRATOR_SHELL] + [rule("subagent", "*", "allow")]
     if role == "docs":
-        return [rule("edit", "*", "deny"), rule("edit", "*.md", "allow")]
+        return ([rule("edit", "*", "deny"), rule("edit", "*.md", "allow")]
+                + [rule("shell", c, e) for c, e in DOCS_SHELL_RULES])
     return [rule("edit", "*", "allow")]  # implementer: full edit (global shell rules still apply)
 
 
@@ -142,7 +210,7 @@ def shell_rule_problems(rules, role):
             if role != "inspector":
                 problems.append("broad `shell *` ask outside the inspector role (global rules apply)")
             later = {x["resource"] for x in rules[i + 1:] if x["action"] == "shell" and x["effect"] == "deny"}
-            missing = [d for d in SHELL_DENY if d not in later]
+            missing = [d for d in DENY_SHELL if d not in later]
             if missing:
                 problems.append("`shell *` ask not followed by the shell denies: " + ", ".join(missing))
             asked = True
@@ -220,6 +288,11 @@ def main():
     stale = [p for p, c in wanted.items()
              if not p.exists() or p.read_text(encoding="utf-8") != c]
     if args.check:
+        denies = global_shell_denies(root)
+        if denies is not None and denies != list(DENY_SHELL):
+            print("error: DENY_SHELL differs from the shell deny rules in opencode.json "
+                  "(keep both equal, in the same order)", file=sys.stderr)
+            return 1
         for p in stale:
             print(f"stale: {p.relative_to(root)}", file=sys.stderr)
         for p in orphans:

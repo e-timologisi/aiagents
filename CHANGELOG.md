@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 — 2026-11-07
+
+Hardened permissions recipe for autonomous runs (ported from real use; generic).
+- `docs/agents/autonomy-policy.md` recipe: every force-push form denied (`-f`, `--force*` incl. `--force-with-lease`, `+refspec`, also `git <options> push`); recursive `rm` forms ask; `gh api` sensitive path components (rulesets, branch protection, environments, secrets, variables, dependabot secrets, hooks, keys, collaborators, invitations, visibility, transfer, dispatches) and `--input` ask in any flag order; docker volume/network/image removals and prunes ask; cloud/IaC deploy tools (`aws`, `sam deploy|delete|sync|publish`, `terraform apply|destroy`, `kubectl`, `helm`) ask while validate/build/local/plan are allowed; production workflow names re-asked in more spellings; honest residual-gap list.
+- `sync-agents.py`: `SHELL_DENY` renamed `DENY_SHELL` and aligned with the recipe; `REVIEWER_SHELL_RULES` appended last for reviewer/planner (no git/gh writes, `git branch` read forms only, no `gh api` write methods or `--input`, no `rm`/`mv`/`cp`/`tee`/`sed -i`); narrower `DOCS_SHELL_RULES` for the docs role (may branch, commit, push, open a PR, merge `origin/*`); `--check` fails when `DENY_SHELL` differs from the shell denies of an existing `opencode.json`.
+- `check-kit.py`: the recipe's shell denies must equal `DENY_SHELL`; tests for reviewer/planner read-only rules, docs rules and the drift check. Regenerate agents with `python3 scripts/sync-agents.py` after updating.
+
 ## 0.6.0 — 2026-11-06
 
 Process gates and lessons from months of multi-repo agent work, as generic, tool-neutral improvements. Addresses #17 (retro template), progress on #2 and #3.

@@ -215,7 +215,48 @@ class RolePermissionsTest(unittest.TestCase):
     def test_inspector_reappends_denies_after_its_ask(self):
         rules = self.shell("inspector")
         ask = rules.index(("*", "ask"))
-        self.assertEqual(rules[ask + 1:], [(d, "deny") for d in self.sync.SHELL_DENY])
+        self.assertEqual(rules[ask + 1:], [(d, "deny") for d in self.sync.DENY_SHELL])
+
+    def test_reviewer_roles_are_read_only_by_rule(self):
+        for role in ("reviewer", "planner"):
+            rules = self.shell(role)
+            with self.subTest(role=role):
+                self.assertNotIn(("*", "allow"), rules)
+                self.assertEqual(rules[-len(self.sync.REVIEWER_SHELL_RULES):], list(self.sync.REVIEWER_SHELL_RULES))
+                for deny in ("git push *", "git commit *", "git restore *", "git branch *", "gh pr merge*",
+                             "gh pr comment*", "gh api -X POST*", "gh api * --method DELETE*", "gh api *--input*",
+                             "rm *", "sed -i*"):
+                    self.assertIn((deny, "deny"), rules)
+                allows = [r for r, e in rules if e == "allow"]
+                self.assertTrue(all(r.startswith(("git branch", "git status", "git diff", "git log", "git show",
+                                                  "gh issue view", "gh pr view", "gh pr diff")) for r in allows), allows)
+
+    def test_docs_role_may_commit_but_not_rewrite(self):
+        rules = self.shell("docs")
+        self.assertNotIn(("git commit *", "deny"), rules)
+        self.assertNotIn(("git push *", "deny"), rules)
+        for deny in ("git reset *", "git rebase *", "git branch -D*", "gh pr merge*", "gh api *--input*", "rm *"):
+            self.assertIn((deny, "deny"), rules)
+        self.assertNotIn(("cp *", "deny"), rules)
+
+    def test_drift_check_against_opencode_json(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            (root / "agents").mkdir()
+            (root / "agents" / "x.md").write_text("---\nname: x\ndescription: d\nrole: reviewer\n---\nbody\n",
+                                                  encoding="utf-8")
+            script = CORE / "scripts" / "sync-agents.py"
+            run = lambda: subprocess.run([sys.executable, str(script), "--root", d] + ["--check"],
+                                         capture_output=True, text=True)
+            subprocess.run([sys.executable, str(script), "--root", d], check=True, capture_output=True)
+            self.assertEqual(run().returncode, 0)
+            rules = [{"action": "shell", "resource": r, "effect": "deny"} for r in self.sync.DENY_SHELL]
+            (root / "opencode.json").write_text(json.dumps({"permissions": rules}), encoding="utf-8")
+            self.assertEqual(run().returncode, 0)
+            (root / "opencode.json").write_text(json.dumps({"permissions": rules[:-1]}), encoding="utf-8")
+            res = run()
+            self.assertEqual(res.returncode, 1)
+            self.assertIn("DENY_SHELL differs", res.stderr)
 
     def test_checker_catches_bad_rules(self):
         r = self.sync.rule
@@ -227,12 +268,14 @@ class RolePermissionsTest(unittest.TestCase):
     def test_autonomy_recipe_covers_the_exceptions(self):
         text = (CORE / "docs-templates" / "autonomy-policy.md.tmpl").read_text(encoding="utf-8")
         for needle in ('"shell", "resource": "*", "effect": "allow"', "external_directory", "ssh *", "sudo *",
-                       "rm -rf *", "git reset --hard*", "git clean*", "git branch -D*", "docker * prune*",
-                       "gh secret *", "gh variable *", "gh repo edit*", "gh release create*", "gh workflow run *",
+                       "rm -rf *", "rm --recursive*", "git reset --hard*", "git clean *", "git branch -D *", "docker * prune*",
+                       "docker volume *", "aws *", "terraform destroy*", "kubectl *", "helm *", "sam validate*",
+                       "gh api */rulesets*", "gh api */branches/*/protection*", "gh api *--input*", "Residual gaps",
+                       "gh secret *", "gh variable *", "gh repo edit *", "gh release create*", "gh workflow run *",
                        "*prod*", "bash -", "zsh -", "sh -", "*.env", "last match wins"):
             with self.subTest(needle=needle):
                 self.assertIn(needle, text)
-        for deny in self.sync.SHELL_DENY:
+        for deny in self.sync.DENY_SHELL:
             self.assertIn(f'"resource": "{deny}", "effect": "deny"', text)
 
 

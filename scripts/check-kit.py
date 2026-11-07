@@ -18,13 +18,14 @@ Checks:
     new placeholders are used; handover-check.sh contains no mutating gh/git command; every workflow
     and CI template pins actions to a commit SHA
   - generated role permissions never contain a broad shell allow; only the inspector re-asks `shell *`
-    and re-appends the shell denies after it
+    and re-appends the shell denies after it; the recipe's shell denies equal DENY_SHELL (drift check)
   - no forbidden strings: built-in generic patterns (12-digit AWS account ids, ARNs, IPv4 addresses,
     GitHub tokens, Google OAuth secrets, private keys, password literals, home directory paths,
     hosted tracker sites) plus optional local regexes
     from the untracked `.kit-forbidden.txt` (one per line; put your own domains/org names there)
 """
 import importlib.util
+import re
 import pathlib
 import subprocess
 import sys
@@ -203,6 +204,11 @@ def main():
     for name in NEW_PLACEHOLDERS:
         if name not in placeholders:
             errors.append(f"core/placeholders.yaml: {name} declared but not used by any template")
+    recipe = (KIT / "core" / "docs-templates" / "autonomy-policy.md.tmpl").read_text(encoding="utf-8")
+    recipe_denies = re.findall(r'"action": "shell", "resource": "([^"]+)", "effect": "deny"', recipe)
+    if recipe_denies != list(sync.DENY_SHELL):
+        errors.append("autonomy-policy.md.tmpl: shell deny rules of the recipe drift from DENY_SHELL in "
+                      "core/scripts/sync-agents.py (keep both equal, same order)")
     gate = KIT / "core" / "scripts" / "handover-check.sh"
     if gate.exists():
         for n, line in mutating_lines(gate.read_text(encoding="utf-8")):
