@@ -20,7 +20,8 @@ Never pass secrets with --set: values are stored in the manifest.
 
 --profile full (default, unchanged behaviour) installs everything. --profile lean (what /setup uses)
 installs lead, explorer, a small core skill set, AGENTS.md, interaction standard, access-and-conflicts,
-work-log template, the /setup command and the chosen packs; --agent adds further agents.
+work-log template, handover rules + handover-check.sh, autonomy policy, decision-log and retro
+templates, opt-in CI templates under docs/ci-templates/ (never auto-enabled), the /setup command and the chosen packs; --agent adds further agents.
 --update keeps the stored profile, packs and agents and adds new --pack/--agent choices.
 """
 import argparse
@@ -129,6 +130,15 @@ def build_plan(type_name, pack_names, standalone, type_spec, profile="full", age
     plan_put(plan, "docs/agents/interaction-standard.md", dt / "interaction-standard.md.tmpl", "core")
     plan_put(plan, "docs/agents/access-and-conflicts.md", dt / "access-and-conflicts.md.tmpl", "core")
     plan_put(plan, "docs/agents/templates/work-log.md", dt / "work-log.md", "core")
+    plan_put(plan, "docs/agents/handover-rules.md", dt / "handover-rules.md.tmpl", "core")
+    plan_put(plan, "docs/agents/autonomy-policy.md", dt / "autonomy-policy.md.tmpl", "core")
+    plan_put(plan, "docs/agents/templates/decision-log.md", dt / "decision-log.md.tmpl", "core")
+    plan_put(plan, "docs/agents/templates/retro-template.md", dt / "retro-template.md", "core")
+    for script in ("handover-check.sh", "check-pinned-actions.py"):
+        plan_put(plan, f"scripts/{script}", core / "scripts" / script, "core")
+    # Opt-in copies only: the project owner reads them and copies them into .github/workflows/.
+    for tmpl in sorted((core / "ci-templates").glob("*.yml.tmpl")):
+        plan_put(plan, f"docs/ci-templates/{tmpl.name[:-len('.tmpl')]}", tmpl, "core")
     add_tree(plan, dt / "project", "docs/agents/templates", "core")
     if type_spec.get("docs_hub") == "true" or standalone:
         plan_put(plan, "docs/architecture/service-map.md", dt / "service-map.md.tmpl", "core")

@@ -1,0 +1,106 @@
+# agent-report (opt-in template; NOT active until the project owner copies it).
+# Read docs/agents/handover-rules.md, then copy to .github/workflows/agent-report.yml.
+#
+# Job `agent-report` passes only when ALL hold:
+#   1. the PR carries the label `{{AGENT_REPORT_LABEL}}`;
+#   2. the latest valid report comment (first line exactly `AGENT-REPORT tip=<40-hex sha>`) from an
+#      allowed author names the CURRENT PR head (any new push invalidates it);
+#   3. the label was applied after that report comment (the lead verified the report, then labelled).
+# Allowed authors: `{{AGENT_REPORT_AUTHORS}}` = `collaborators` means comment author association
+# OWNER, MEMBER or COLLABORATOR; otherwise a comma-separated list of logins.
+#
+# Honest limit: agents and the lead often share one account, so this enforces the PROCESS (report,
+# independent verification, label, nothing pushed since), not WHO did each step.
+# It is NOT a required check by default. Making it required is the project owner's decision, after it
+# has proved itself on real PRs. Job `rerun-on-report` exists because comment-event runs attach to
+# the default branch, not to the PR: it re-runs the PR's own `agent-report` run when a report is posted.
+# Pin any action you add (see pinned-actions); this file uses none: `gh` only, no checkout.
+
+name: agent-report
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited]
+
+permissions: {}
+
+concurrency:
+  group: agent-report-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  agent-report:
+    name: agent-report
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+      issues: read
+    steps:
+      - name: Check report, label and head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          LABEL: "{{AGENT_REPORT_LABEL}}"
+          AUTHORS: "{{AGENT_REPORT_AUTHORS}}"
+        run: |
+          set -euo pipefail
+          head="$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)"
+          if ! gh api "repos/$REPO/issues/$PR/labels" --paginate --jq '.[].name' | grep -Fxq -- "$LABEL"; then
+            echo "agent-report: label '$LABEL' missing (the lead adds it after verifying the report)"; exit 1
+          fi
+          report="$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[]' | jq -s -r \
+            --arg authors "$AUTHORS" '
+              ($authors | split(",") | map(gsub("^\\s+|\\s+$"; "")) | map(select(. != ""))) as $list
+              | map(select(
+                  (if $authors == "collaborators"
+                   then (.author_association | IN("OWNER", "MEMBER", "COLLABORATOR"))
+                   else (.user.login | IN($list[])) end)
+                  and ((.body // "") | split("\n")[0] | sub("\r$"; "") | test("^AGENT-REPORT tip=[0-9a-f]{40}\\s*$"))))
+              | sort_by(.created_at) | last
+              | if . == null then "" else
+                  ((.body | split("\n")[0] | capture("tip=(?<t>[0-9a-f]{40})").t) + " " + .created_at) end')"
+          if [ -z "$report" ]; then
+            echo "agent-report: no valid AGENT-REPORT comment from an allowed author"; exit 1
+          fi
+          tip="${report%% *}"; reported_at="${report#* }"
+          if [ "$tip" != "$head" ]; then
+            echo "agent-report: latest report names $tip but the PR head is $head (new push: report again)"; exit 1
+          fi
+          labelled_at="$(gh api "repos/$REPO/issues/$PR/events" --paginate --jq '.[]' | jq -s -r --arg l "$LABEL" \
+            'map(select(.event == "labeled" and .label.name == $l)) | sort_by(.created_at) | last | .created_at // ""')"
+          if [ -z "$labelled_at" ] || [[ "$labelled_at" < "$reported_at" ]]; then
+            echo "agent-report: label '$LABEL' must be applied after the report ($reported_at); remove and re-add it"; exit 1
+          fi
+          echo "agent-report: ok (tip $head reported $reported_at, labelled $labelled_at)"
+
+  rerun-on-report:
+    name: rerun-on-report
+    if: >-
+      github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, 'AGENT-REPORT tip=')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Re-run the PR's agent-report check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          head="$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)"
+          run_id="$(gh api "repos/$REPO/actions/workflows/agent-report.yml/runs?event=pull_request&head_sha=$head&per_page=1" \
+            --jq '.workflow_runs[0] | select(.status == "completed") | .id')"
+          if [ -z "$run_id" ]; then
+            echo "rerun-on-report: no completed agent-report run for $head yet; it will evaluate on its own"; exit 0
+          fi
+          gh run rerun "$run_id" --repo "$REPO"
+          echo "rerun-on-report: re-ran run $run_id for $head"

@@ -14,8 +14,14 @@ Checks:
     its interview rules (one question at a time, no secrets, access summary); lean profile names exist
   - third-party attribution: every directory with UPSTREAM.md has LICENSE.upstream and is listed in
     THIRD-PARTY-NOTICES.md, which reproduces every upstream MIT license in full
+  - process gates: handover-rules/autonomy/decision-log/retro templates, CI templates and scripts exist;
+    new placeholders are used; handover-check.sh contains no mutating gh/git command; every workflow
+    and CI template pins actions to a commit SHA
+  - generated role permissions never contain a broad shell allow; only the inspector re-asks `shell *`
+    and re-appends the shell denies after it
   - no forbidden strings: built-in generic patterns (12-digit AWS account ids, ARNs, IPv4 addresses,
-    GitHub tokens, Google OAuth secrets, private keys, password literals) plus optional local regexes
+    GitHub tokens, Google OAuth secrets, private keys, password literals, home directory paths,
+    hosted tracker sites) plus optional local regexes
     from the untracked `.kit-forbidden.txt` (one per line; put your own domains/org names there)
 """
 import importlib.util
@@ -25,11 +31,16 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from kitlib import (KIT, LEAN_AGENTS, LEAN_SKILLS, PLACEHOLDER, check_attribution, declared,  # noqa: E402
-                    frontmatter, parse_yaml, render_command, scan_forbidden)
+                    frontmatter, mutating_lines, parse_yaml, render_command, scan_forbidden)
 
 REQUIRED_FILES = [
     "core/agents/lead.md", "core/agents/explorer.md", "core/agents/ticket-tracker.md",
-    "core/docs-templates/access-and-conflicts.md.tmpl", "core/commands/setup.md", "core/docs-templates/work-log.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
+    "core/docs-templates/access-and-conflicts.md.tmpl", "core/commands/setup.md",
+    "core/docs-templates/handover-rules.md.tmpl", "core/docs-templates/autonomy-policy.md.tmpl",
+    "core/docs-templates/decision-log.md.tmpl", "core/docs-templates/retro-template.md",
+    "core/scripts/handover-check.sh", "core/scripts/check-pinned-actions.py",
+    "core/ci-templates/agent-report.yml.tmpl", "core/ci-templates/pinned-actions.yml.tmpl",
+    "core/ci-templates/ticket-key.yml.tmpl", "core/docs-templates/work-log.md", "core/docs-templates/interaction-standard.md.tmpl", "HOWTO.md", "prompts/00-start-here.md",
 ] + [f"core/skills/{s}/SKILL.md" for s in (
     "project-intake", "document-ingest", "requirements-register", "backlog-planning", "dispatch-tasks",
     "status-report", "project-state", "codebase-discovery", "project-setup", "release-checklist",
@@ -42,15 +53,21 @@ ONE_QUESTION_SKILLS = (
     "status-report", "project-state", "codebase-discovery", "task-intake", "project-setup",
 )
 SETUP_NEEDLES = ("one question at a time", "never ask for", "servers, databases and credentials are never",
-                 ".aiagents/access.md", "--profile lean", "--detect", "local-<n>", "commit locally")
+                 ".aiagents/access.md", "--profile lean", "--detect", "local-<n>", "commit locally",
+                 "handover gate", "pinned-actions guard", "autonomy policy")
+NEW_PLACEHOLDERS = ("AGENT_REPORT_LABEL", "AGENT_REPORT_AUTHORS", "MAX_PARALLEL_AGENTS", "EXPECTED_CHECKS")
 TYPE_FILES = ("type.yaml", "AGENTS.md.tmpl", "CONTRIBUTING.md.tmpl", "README.md.tmpl")
 
 
-def load_sync():
-    spec = importlib.util.spec_from_file_location("sync_agents", KIT / "core" / "scripts" / "sync-agents.py")
+def load_module(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def load_sync():
+    return load_module("sync_agents", KIT / "core" / "scripts" / "sync-agents.py")
 
 
 def text_files(root):
@@ -103,7 +120,10 @@ def main():
         for a in sorted((base / "agents").glob("*.md")) if (base / "agents").is_dir() else []:
             agents += 1
             try:
-                sync.parse(a)
+                meta, _ = sync.parse(a)
+                rules = sync.role_permissions(meta["role"]) + sync.extra_rules(meta, a)
+                for problem in sync.shell_rule_problems(rules, meta["role"]):
+                    errors.append(f"{a.relative_to(KIT)}: permissions: {problem}")
             except ValueError as err:
                 errors.append(str(err).replace(str(KIT) + "/", ""))
             lines = len(a.read_text(encoding="utf-8").splitlines())
@@ -136,7 +156,10 @@ def main():
             if "\n## Access\n" not in a.read_text(encoding="utf-8"):
                 errors.append(f"{a.relative_to(KIT)}: missing '## Access' paragraph")
     lead_text = (KIT / "core" / "agents" / "lead.md").read_text(encoding="utf-8")
-    for needle in ("by CONTENT", "`Access:` line", "merge order", "mergeStateStatus", ".aiagents/access.md"):
+    for needle in ("by CONTENT", "`Access:` line", "merge order", "mergeStateStatus", ".aiagents/access.md",
+                   "AGENT-REPORT tip=", "handover-check.sh", "review bot", "RESUMING", "own worktree",
+                   "autonomy-policy.md", "Infrastructure outage", "PENDING", "UNSTABLE",
+                   "touched by others", "reserved"):
         if needle not in lead_text:
             errors.append(f"core/agents/lead.md: missing conflict/access rule ({needle})")
     for sk in ONE_QUESTION_SKILLS:
@@ -176,6 +199,30 @@ def main():
                     placeholders.add(name)
                     if name not in allowed:
                         errors.append(f"{p.relative_to(KIT)}:{n}: undeclared placeholder {{{{{name}}}}}")
+
+    for name in NEW_PLACEHOLDERS:
+        if name not in placeholders:
+            errors.append(f"core/placeholders.yaml: {name} declared but not used by any template")
+    gate = KIT / "core" / "scripts" / "handover-check.sh"
+    if gate.exists():
+        for n, line in mutating_lines(gate.read_text(encoding="utf-8")):
+            errors.append(f"core/scripts/handover-check.sh:{n}: must stay read-only: {line.strip()}")
+    ci_rules = (("agent-report.yml.tmpl", ("name: agent-report", "AGENT-REPORT tip=", "rerun-on-report",
+                                           "permissions: {}", "NOT a required check")),
+                ("pinned-actions.yml.tmpl", ("name: pinned-actions", "check-pinned-actions.py")),
+                ("ticket-key.yml.tmpl", ("placeholder-key", "[1-9][0-9]*")))
+    for fname, needles in ci_rules:
+        p = KIT / "core" / "ci-templates" / fname
+        text = p.read_text(encoding="utf-8") if p.exists() else ""
+        for needle in needles:
+            if needle not in text:
+                errors.append(f"core/ci-templates/{fname}: missing {needle!r}")
+        if "actions/checkout" in text and "persist-credentials: false" not in text:
+            errors.append(f"core/ci-templates/{fname}: checkout must not persist credentials")
+    pin = load_module("check_pinned", KIT / "core" / "scripts" / "check-pinned-actions.py")
+    for wf in sorted((KIT / "core").rglob("*.yml*")) + sorted((KIT / ".github").rglob("*.yml")):
+        for n, ref in pin.check_text(wf.read_text(encoding="utf-8")):
+            errors.append(f"{wf.relative_to(KIT)}:{n}: action not pinned to a commit SHA: {ref}")
 
     res = subprocess.run([sys.executable, str(KIT / "scripts" / "build-prompts.py"), "--check"],
                          capture_output=True, text=True)

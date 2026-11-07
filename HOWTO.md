@@ -133,6 +133,17 @@ Documents produced that day: requirements register, project brief, decision brie
 ## Parallel agents and missing access
 The lead lists which files each agent touches before running agents in parallel, tells you the merge order with PR links, and re-checks open PRs after each merge. Do not merge before the agent's final report. If an agent cannot reach the ticket system, code host or a server it says so once and uses the fallback in `docs/agents/access-and-conflicts.md`. The optional `ticket-tracker` agent (fill the `TRACKER_*`/`WIKI_*` values with `--set`) updates tickets and mirrors docs after the lead verified a merge.
 
+## Handing a PR over (the handover gate)
+1. The agent finishes with a PR comment whose first line is `AGENT-REPORT tip=<sha of the last commit>`, then its report (CI run link separate from what it ran locally).
+2. The lead waits for CI, then a few minutes for any review bot, then checks: `scripts/handover-check.sh <owner/repo> <pr>`. It says `CLEAN` or lists what is missing.
+3. Only when it is CLEAN and the lead has checked the report does it add the `agent-reported` label and hand the PR to you. A new push means a new report.
+4. After you merge, the lead checks the main branch by content through the code host's API, and only then updates the tracker.
+Right after a PR opens, checks may be missing for ~10 minutes: that means "wait", not "done". Before the label is added, the `agent-report` check is red on purpose.
+Optional CI checks live in `docs/ci-templates/`. Nothing there runs until you copy a file into `.github/workflows/` after reading it. Making a check required is your call, once it has proved itself.
+
+## Letting the lead decide on its own (autonomy policy)
+By default the lead asks you at every gate. If you want it to keep going, fill the grant table in `docs/agents/autonomy-policy.md` (who, date, scope, end). The lead then adopts its recommended answers and logs each in `docs/decision-log.md` so you can review them later. Servers, secrets, DNS, cloud accounts, production releases, repository settings and other projects are never covered. After each step, a short retro (`docs/agents/templates/retro-template.md`) turns what went wrong into rule changes.
+
 ## Resuming in a fresh chat
 Write: `@lead resume from docs/project-state.md`. The lead reads the state file (phase, gates, decisions, open questions, tickets), summarises it in five lines, checks PR statuses and continues. Keep the state file committed.
 
@@ -174,6 +185,9 @@ Write: `@lead resume from docs/project-state.md`. The lead reads the state file 
 10. Legal and domain statements are "to be validated by an expert".
 11. Parallel agents: files listed first, merge order stated, open PRs re-checked after each merge, `main` verified by content.
 12. No access to a tracker or server? Agents say so once and fall back to `docs/work-log.md`; nothing is invented.
+13. "Done" needs evidence: an `AGENT-REPORT tip=<sha>` comment, a CI run link and resolved review threads (bots comment minutes after CI).
+14. Every agent works in its own folder (worktree); nobody pastes tokens into commands.
+15. When a server is down, agents only look from outside and tell you once what only you can do.
 
 ---
 

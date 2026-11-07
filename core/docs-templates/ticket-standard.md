@@ -14,6 +14,11 @@ An issue is **ready** when:
 
 Turn vague requests into ready tickets with the `task-intake` skill; it asks the human instead of guessing.
 
+## Keys and pending decisions
+
+- **Reserved keys**: if the lead reserves a key before the ticket exists (for a branch or PR title), the lead creates the ticket to match **before the merge**. Agents never invent keys and never use placeholder keys (key 0, leading zeros); without a key they ask the lead.
+- **Pending decisions need a home**: when a ticket forbids editing an ADR but a reviewer asks for the decision to be recorded there, record it in `docs/decision-log.md` (template `docs/agents/templates/decision-log.md`) and open a follow-up ticket to amend the ADR. Never leave it only in a PR comment.
+
 ## Labels
 
 | Label | Use when |

@@ -1,0 +1,30 @@
+# pinned-actions (opt-in template; NOT active until the project owner copies it).
+# Read it, then copy to .github/workflows/pinned-actions.yml. Needs scripts/check-pinned-actions.py.
+#
+# Fails when any action in .github/ is not pinned to a 40-hex commit SHA (or a docker image to a
+# sha256 digest). Pin with a SHA looked up through the hosting API, never copied from memory:
+#   gh api repos/<owner>/<repo>/commits/<tag> --jq .sha      # e.g. repos/actions/checkout/commits/v7.0.1
+# and keep the tag as a comment: `uses: actions/checkout@<sha> # v7.0.1`.
+# Whether this job becomes a required status check is the project owner's decision.
+
+name: pinned-actions
+
+on:
+  pull_request:
+  push:
+    branches: [{{DEFAULT_BRANCH}}]
+
+permissions:
+  contents: read
+
+jobs:
+  pinned-actions:
+    name: pinned-actions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check action pinning
+        run: python3 scripts/check-pinned-actions.py .github

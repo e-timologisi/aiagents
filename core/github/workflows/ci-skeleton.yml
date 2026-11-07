@@ -31,27 +31,27 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5   # pin third-party actions by SHA
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (pin by SHA; verify with gh api)
       # - setup toolchain
       - run: {{LINT_CMD}}
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: {{TEST_CMD}}
 
   integration:
     # Throwaway dependencies only (containers); never staging/production data stores.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: {{INTEGRATION_CMD}}
 
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: {{SECURITY_CMD}}
 
   build-image:
@@ -65,7 +65,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: {{BUILD_CMD}}
       # - push the artifact tagged with the commit SHA
 

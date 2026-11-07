@@ -55,10 +55,14 @@ Fallbacks (from `docs/agents/access-and-conflicts.md`):
 - No wiki: no mirroring; docs stay in the repo.
 
 ## Step 4: lean install, then offers
-The default is the lean profile: agents `lead` and `explorer`; skills task-intake, dispatch-tasks, tdd, diagnosing-bugs, code-review, grilling, domain-modeling, codebase-design, pr; `AGENTS.md`, interaction standard, access-and-conflicts, work-log template and this command.
+The default is the lean profile: agents `lead` and `explorer`; skills task-intake, dispatch-tasks, tdd, diagnosing-bugs, code-review, grilling, domain-modeling, codebase-design, pr; `AGENTS.md`, interaction standard, access-and-conflicts, handover rules with `scripts/handover-check.sh`, autonomy policy, work-log, decision-log and retro templates, opt-in CI templates in `docs/ci-templates/` (copies, never active workflows) and this command.
 Then ask yes/no, one per turn, ONLY for what Step 1 marked relevant:
 - each suggested pack: "Add the <pack> pack? <one-line purpose from KIT/packs/<pack>/README.md>". Recommended: yes.
 - "Add the role agents <agents from detect> so the lead can dispatch implementation and reviews?" Recommended: yes for code repos.
+Then three process questions, yes/no, one per turn (the files are installed by the lean profile anyway; the answer decides what you switch on and mention in the report; never copy a workflow into `.github/workflows/` yourself):
+- Handover gate: "Use the handover gate (agents end with an `AGENT-REPORT tip=<sha>` PR comment; the lead runs `scripts/handover-check.sh` before handing a PR over)?" Recommended: yes when a code host is connected; no for local-only work. The optional CI check is `docs/ci-templates/agent-report.yml`: the owner copies it after reading it; it is not a required check.
+- Pinned-actions guard: "Add the pinned-actions guard (CI fails when a workflow action is not pinned to a commit SHA)?" Recommended: yes on GitHub. Yes means: tell the owner to read `docs/ci-templates/pinned-actions.yml` and copy it to `.github/workflows/`.
+- Autonomy policy: "Do you want to grant the lead a standing instruction to adopt recommended defaults without asking each time (servers, secrets, DNS, cloud, releases and repo settings are never covered)?" Recommended: no until the first backlog is approved. Yes means: fill the grant table in `docs/agents/autonomy-policy.md` with the owner's name and date and copy `docs/agents/templates/decision-log.md` to `docs/decision-log.md`.
 Everything else can be added later with `/setup add <pack or agent>`.
 
 Build the command, show it and ask "Install? yes / changes":

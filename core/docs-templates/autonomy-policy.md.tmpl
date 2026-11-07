@@ -1,0 +1,125 @@
+# Autonomy policy for {{PROJECT_NAME}}
+
+How the owner grants the lead a **standing instruction** to proceed without asking for each approval, and what it never covers. Without a recorded grant below, every gate in `docs/agents/how-to-use-agents.md` still needs the owner.
+
+## Grant
+
+| Field | Value |
+|---|---|
+| Granted by | <owner> |
+| Date | <YYYY-MM-DD> |
+| Scope | <e.g. "design decisions and ticket work until the first real users"> |
+| Ends | <date, event (first real user, first production release) or "until revoked"> |
+| Max parallel agents | {{MAX_PARALLEL_AGENTS}} |
+
+The owner can revoke or narrow the grant at any time with one sentence; the lead records it here.
+
+## What the lead may do under the grant
+
+- Adopt the **recommended default** for a design decision, record it in `docs/decision-log.md` (question, answer, rationale, revisit trigger, who validates) and continue. Such decisions are reversible while there are no real users; the log is the owner's review list.
+- Create tickets, dispatch agents (at most {{MAX_PARALLEL_AGENTS}} at once), run reviews and fix loops.
+- Prepare PRs up to a CLEAN handover gate (`docs/agents/handover-rules.md`).
+
+## Never covered (always ask the owner)
+
+- Servers, databases with real data, DNS, cloud accounts, billing.
+- Secrets and credentials of any kind (the owner sets them; agents refer to names only).
+- Production releases and deployments.
+- Repository or organisation settings (branch protection, required checks, permissions, visibility).
+- Other projects or repositories outside this project.
+- Legal or domain facts: still "to be validated by {{DOMAIN_EXPERT}}".
+
+## Merge guard rails (if the grant includes merging)
+
+- Merge only when `scripts/handover-check.sh` reports CLEAN and after the agent's `AGENT-REPORT`.
+- Merge in the stated order; re-check all open PRs after every merge.
+- Verify `{{DEFAULT_BRANCH}}` by content against the reviewed tip, then update the tracker.
+- Stop and ask on any red required check, unresolved Blocker/High finding or unexpected diff.
+
+## Permissions recipe for autonomous operation
+
+The grant only works if the AI tool does not stop at every command, and only stays safe if the dangerous commands still stop. Recipe for **OpenCode v2** (written against the v2 permission docs; v1 used a keyed object and different names, so check the version of the docs you follow and note it here: `Docs version used: <v2 / date>`). Rules are **ordered and the last match wins**; agent rules are appended **after** the global rules, so a broad agent-level rule overrides every global exception.
+
+Global config, in this order:
+
+```jsonc
+"permissions": [
+  {"action": "shell", "resource": "*", "effect": "allow"},   // 1. broad allows first
+  {"action": "external_directory", "resource": "*", "effect": "allow"},
+  {"action": "shell", "resource": "ssh *", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "scp *", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "sftp *", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "rsync *", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "sudo *", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "su *", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "su", "effect": "ask"},   // 2. remote access
+  {"action": "shell", "resource": "rm -rf *", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "rm -fr *", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "git reset --hard*", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "git clean*", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "git branch -D*", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "docker * prune*", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "docker rm *", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "docker rmi *", "effect": "ask"},   // 3. irreversible local operations
+  {"action": "shell", "resource": "gh secret *", "effect": "ask"},   // 4. secrets and variables
+  {"action": "shell", "resource": "gh variable *", "effect": "ask"},   // 4. secrets and variables
+  {"action": "shell", "resource": "gh api * -X PUT*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh api * -X PATCH*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh api * -X DELETE*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh api * --method PUT*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh api * --method PATCH*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh api * --method DELETE*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh api -X PUT*", "effect": "ask"},
+  {"action": "shell", "resource": "gh api -X PATCH*", "effect": "ask"},
+  {"action": "shell", "resource": "gh api -X DELETE*", "effect": "ask"},
+  {"action": "shell", "resource": "gh api --method PUT*", "effect": "ask"},
+  {"action": "shell", "resource": "gh api --method PATCH*", "effect": "ask"},
+  {"action": "shell", "resource": "gh api --method DELETE*", "effect": "ask"},
+  {"action": "shell", "resource": "gh repo edit*", "effect": "ask"},   // 5. repository settings and rulesets
+  {"action": "shell", "resource": "gh release create*", "effect": "ask"},   // 6. releases and workflow dispatches: ask, then routine CI allowed, then production names re-asked
+  {"action": "shell", "resource": "gh workflow run *", "effect": "ask"},
+  {"action": "shell", "resource": "gh api *dispatches*", "effect": "ask"},
+  {"action": "shell", "resource": "gh workflow run ci.yml*", "effect": "allow"},
+  {"action": "shell", "resource": "gh workflow run *prod*", "effect": "ask"},
+  {"action": "shell", "resource": "gh workflow run *Prod*", "effect": "ask"},
+  {"action": "shell", "resource": "gh workflow run *PROD*", "effect": "ask"},
+  {"action": "shell", "resource": "gh workflow run *release*", "effect": "ask"},
+  {"action": "shell", "resource": "gh workflow run *deploy*", "effect": "ask"},
+  {"action": "shell", "resource": "curl * | *sh*", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "wget * | *sh*", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "sh", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "bash", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "zsh", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "sh -", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "bash -", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "zsh -", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "sh -s*", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "bash -s*", "effect": "ask"},
+  {"action": "shell", "resource": "sh -*", "effect": "ask"},
+  {"action": "shell", "resource": "bash -*", "effect": "ask"},
+  {"action": "shell", "resource": "zsh -*", "effect": "ask"},   // 7. pipe-to-shell (pipelines are checked per command, so `sh`/`bash -` alone matter)
+  {"action": "shell", "resource": "git push --force*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push * --force*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push -f*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push * -f", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push * -f *", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push --force-with-lease*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push * --force-with-lease*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "git push * +*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "shell", "resource": "gh repo delete*", "effect": "deny"},   // 8. hard denies LAST: force pushes (incl. -f and --force-with-lease) and repository deletion
+  {"action": "read", "resource": "*.env", "effect": "ask"},   // 9. secrets files stay ask
+  {"action": "read", "resource": "*.env.*", "effect": "ask"},   // 9. secrets files stay ask
+]
+```
+
+Notes:
+- Replace `ci.yml` with the project's routine CI workflows (allowed explicitly AFTER the dispatch ask); production-looking names are re-asked AFTER the allows, in each letter case, because matching is case-sensitive.
+- Patterns match the command text, so flag order matters: both `gh api -X PUT …` and `gh api <path> -X PUT …` are listed. The list is a safety net, not a sandbox. A pattern ending in ` *` also matches the bare command.
+- Pipelines are checked per command: `curl x | sh` is checked as `curl x` and `sh`, which is why bare interpreters and any option form (`sh -`, `bash -s`, `zsh -c` via `sh -*` etc.) ask; `bash script.sh` stays prompt-free.
+- An "allow always" answer saves an allow rule but never overrides a `deny`; review saved approvals occasionally. Restart the tool after changing its config.
+- Agent roles (generated by `scripts/sync-agents.py`): no role carries a broad `shell *` allow (it would override everything above); reviewer, planner, docs and lead roles carry no `shell *` ask of their own (the globals apply); the inspector role keeps `shell *` ask on purpose and re-appends the shell denies after it. `check-kit.py` and the tests enforce this.
+- `.env` reads stay ask. Remote access, secrets, settings, releases and production dispatches still ask even under a grant: the grant never covers them.
+
+## Public repositories
+
+Changes to a public repository stay generic: no names of private products, customers, people, internal URLs, ticket keys, ids, IPs or account numbers. Scan added lines before pushing.

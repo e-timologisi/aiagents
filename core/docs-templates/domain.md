@@ -31,6 +31,10 @@ When your output names a domain concept (in an issue title, a refactor proposal,
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 
+## Pending decisions
+
+A decision that cannot go into an ADR yet (the ticket forbids editing the ADR, or the ADR is under review) goes into `docs/decision-log.md` with a follow-up ticket to amend the ADR.
+
 ## Flag ADR conflicts
 
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:

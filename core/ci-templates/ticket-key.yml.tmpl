@@ -1,0 +1,39 @@
+# ticket-key (opt-in template; NOT active until the project owner copies it).
+# Read it, then copy to .github/workflows/ticket-key.yml. Only for projects that use a tracker.
+#
+# Rule variant `placeholder-key`: the PR title must start with `<PREFIX>-<n>: ` where <n> is a real
+# key number: no key 0, no leading zeros (placeholders such as <PREFIX>-0 or <PREFIX>-000 are rejected).
+# Never invent keys; work without a tracker uses LOCAL-<n> (docs/agents/access-and-conflicts.md),
+# so do not enable this check there.
+
+name: ticket-key
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  ticket-key:
+    name: ticket-key
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the ticket key in the PR title
+        env:
+          KEY_PREFIX: "{{TRACKER_KEY_PREFIX}}"
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys
+          prefix, title = os.environ["KEY_PREFIX"], os.environ["PR_TITLE"]
+          if not re.fullmatch(r"[A-Z][A-Z0-9]*", prefix):
+              sys.exit("ticket-key: set TRACKER_KEY_PREFIX (for example ABC) before enabling this check")
+          if re.match(rf"{prefix}-0[0-9]*\b", title):
+              sys.exit("ticket-key: placeholder key (0 or leading zero); use the real ticket key")
+          if not re.match(rf"{prefix}-[1-9][0-9]*: \S", title):
+              sys.exit(f"ticket-key: PR title must start with '{prefix}-<n>: <summary>'")
+          print("ticket-key: ok")
+          PY
