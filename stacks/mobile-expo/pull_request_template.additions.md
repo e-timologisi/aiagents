@@ -1,0 +1,1 @@
+- [ ] No secrets or personal data; commands in `CONTRIBUTING.md` pass

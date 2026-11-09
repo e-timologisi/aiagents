@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0-beta — 2026-11-09
+
+Conversational start (phases 0-1 of the kit v2 plan). **Additive only**: `repo-types/`, the five packs, the core agents, prompts, `core/placeholders.yaml` and the existing `apply-kit.py` usage are unchanged. `--type` stays supported (nothing is deprecated in 0.x). New `scripts/baseline-0.6.4.json` lists every file that must stay byte-identical to v0.6.4; `check-kit.py` verifies it.
+- **Stack profiles** `stacks/<id>/stack.yaml` (schema in `stacks/README.md`): `web-nextjs`, `api-go`, `docs-hub`, `serverless-sam` (aliases of the existing repo types, no duplicated files), `api-node`, `data-python` (own templates), `mobile-expo` (beta stub). Fields: category, plain-language title, `fits`/`not_for`, per-OS support, `needs_mac`, `toolchain` (check, minimum, winget/brew install commands, why, admin), accounts, risks, `run_cmd`.
+- **Pack `conversational-start`** (beta): `setup` agent (the only role that installs software; every shell command asks; edits only `docs/setup-log.md`), `lead` overlay (core lead text plus one marked block, inactive unless `docs/project-state.md` is missing), skills `stack-selection`, `machine-setup`, `save-work`, `explain-change`, rules `safety-model` and `setup-log-template`, project-level `/start-here` (`agent: lead`).
+- **Global commands** `/setup` and `/start-here` for OpenCode (`~/.config/opencode/commands/`, plus the `setup` agent in `agents/`) and VS Code prompt files, generated into `bootstrap/commands/` by `scripts/build-bootstrap.py`; one-time `bootstrap/install-commands.py` (stdlib; never overwrites without `--force`; `--dry-run`).
+- `apply-kit.py`: new optional flags `--stack`, `--list-stacks`, `--stack-info [--os]`; manifests record `stack` only when `--stack` is used; `--target` is checked in code instead of by argparse. Output for `--type` is byte-identical to 0.6.4 (checked on all four repo types).
+- `check-kit.py`: stack schema, pack and overlay checks, bootstrap currency, additive-only baseline. Tests in `scripts/test_stacks.py`; CI smoke test applies every stack with the pack.
+- Not done yet (later phases): Windows CI job and path/CRLF port, beginner trials T1-T8, release zip with checksum, generated permission templates, desktop and Flutter stacks.
+
 ## 0.6.4 — 2026-11-11
 
 - **Lead model default moved from the premium to the mid tier**: `MODEL_PLANNER` now defaults to the same model as `MODEL_REVIEWER`; the premium model stays an explicit choice (`MODEL_PREMIUM`). Reversible with one placeholder (`--set MODEL_PLANNER=<premium model>`). `check-kit.py` and tests enforce the defaults.

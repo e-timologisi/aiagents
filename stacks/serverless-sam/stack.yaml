@@ -1,0 +1,39 @@
+id: serverless-sam
+category: api
+title: "Serverless functions on AWS (SAM)"
+plain: "Small pieces of code that run in the cloud only when called"
+fits: [scheduled-job, webhook, event-processing, serverless]
+not_for: [website-only, beginner-first-project]
+repo_type: serverless-sam
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: python
+    check: "python --version"
+    min: "3.10"
+    install:
+      windows: "winget install --id Python.Python.3.12 -e --scope user"
+      macos: "brew install python@3.12"
+    why: "runs the kit scripts and the project"
+    admin: false
+  - id: sam
+    check: "sam --version"
+    min: "1.100"
+    install:
+      windows: "winget install --id Amazon.SAM-CLI -e"
+      macos: "brew install aws-sam-cli"
+    why: "builds and checks the serverless template"
+    admin: true
+accounts_needed: [aws-account]
+recommended_packs: [aws-serverless-cost]
+run_cmd: "sam validate"
+risks:
+  - "Needs an AWS account (cost, budgets and alerts are your decision); deploys only through CI after approval"

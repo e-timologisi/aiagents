@@ -52,3 +52,18 @@ jobs:
             (cd "$lean" && python3 scripts/sync-agents.py --check)
             echo "ok: $type"
           done
+
+      - name: Install smoke test (stacks with conversational-start)
+        run: |
+          set -euo pipefail
+          python3 scripts/apply-kit.py --list-stacks
+          for stack in web-nextjs api-go api-node data-python docs-hub serverless-sam mobile-expo; do
+            target="$(mktemp -d)/smoke-$stack"
+            mkdir -p "$target"
+            git -C "$target" init -q -b main
+            python3 scripts/apply-kit.py --stack "$stack" --pack conversational-start --target "$target" --set PROJECT_NAME=Smoke --set ORG=example --set DOCS_REPO=smoke-docs
+            (cd "$target" && python3 scripts/sync-agents.py --check)
+            python3 scripts/apply-kit.py --target "$target" --update --dry-run
+            echo "ok: $stack"
+          done
+          python3 bootstrap/install-commands.py --dry-run
