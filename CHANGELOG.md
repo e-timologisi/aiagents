@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.2 — 2026-11-09
+
+Process lessons from a long multi-repo project, ported generically.
+- Standing rule "lessons feed the agents" in the `how-to-use-agents` and `AGENTS.md` templates (with a definition-of-done line); agent reports list lessons learned and the agent files they should change.
+- Implementer roles (developer, infra-developer, test-engineer, quick-tasks and the repo-type variants): report only when the final tip has a review-bot review or a quoted quota message (a missing or quota-limited review is never clean), batch fixes, at most one extra bot-driven push, push early after provider interruptions, stacked PRs after a squash, tracker keys looked up and field limits checked, never claim unchecked results. Roles that touch schema also get the migration rules (version-number-only runners, never edit an applied migration, check ALL open PRs for the next number, privileged steps as runtime guards).
+- Reviewer and planner roles: state what was NOT read or run, severity with file:line and fix, review routing (two security reviews for auth/session/token/crypto, one for tenant or personal data in the UI, domain review, database-security review, short re-check, design review before implementation).
+- `handover-rules` template: final-tip bot review rule, report contents (bot status, migration numbers, files touched by others, lessons), label remove-and-re-add after each new report, lead-posted report for branch-update commits, stacked PR conflicts, verify by content, migrations, tracker keys, review routing. Dispatch template gains a migration-number line; lead agent checks lessons and migration numbers.
+- `check-kit.py` checks the new lesson text; README lists the lessons.
+
 ## 0.6.1 — 2026-11-07
 
 Hardened permissions recipe for autonomous runs (ported from real use; generic).

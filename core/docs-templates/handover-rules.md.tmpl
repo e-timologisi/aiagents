@@ -16,7 +16,10 @@ Rules for the lead and every implementer agent in {{PROJECT_NAME}}. They close p
 4. Any new push **invalidates** the report and the label: post a new `AGENT-REPORT` for the new tip.
 5. **Order**: post the `AGENT-REPORT` comment first, then run `scripts/handover-check.sh`, then post its output as a **separate** comment that does NOT start with `AGENT-REPORT` (only report comments may start with it).
 6. **Stop rule**: review bots re-review EVERY push. You are done when the final tip has been reviewed and has no unresolved threads. Batch fixes into few pushes; do not push one commit per finding.
-7. **Expected red**: the optional `agent-report` check stays red, and the merge state `UNSTABLE`, until the lead adds the label. That is not a blocker for your report; "not blocked" means any merge state except `BLOCKED` or `DIRTY`.
+7. **Final-tip bot review**: review bots often review the final commit after an agent said "no new threads". Report only when the final tip itself has a bot review (or an explicit quota message is quoted) and 0 unresolved threads. A missing or quota-limited bot review is never a clean review: say so. Batch fixes (each push triggers a re-review); at most one extra bot-driven push, then report the remaining concerns.
+8. **Report contents** also state: bot status on the final tip (review posted / quota message quoted / missing), migration numbers used, files touched by others, follow-up tickets, lessons learned and the agent files they should change (or "none").
+9. **Push early**: provider quota interruptions stop agents; commit and push in small steps; a resumed agent first checks its worktree and the open PRs.
+10. **Expected red**: the optional `agent-report` check stays red, and the merge state `UNSTABLE`, until the lead adds the label. That is not a blocker for your report; "not blocked" means any merge state except `BLOCKED` or `DIRTY`.
 
 ## 2. The lead's per-PR procedure
 
@@ -28,18 +31,23 @@ Rules for the lead and every implementer agent in {{PROJECT_NAME}}. They close p
    scripts/handover-check.sh {{ORG}}/<repo> <pr> [local-clone]
    ```
 
-   Before the label, `UNSTABLE` caused only by the red `agent-report` check is expected (see 1.7). CLEAN requires: PR open, `mergeStateStatus` CLEAN, 0 unresolved review threads, the **latest** run of every check name green, PR head == the tip of the latest `AGENT-REPORT`. A merged PR is NOT CLEAN (the gate is for handover). The label is reported as info.
+   Before the label, `UNSTABLE` caused only by the red `agent-report` check is expected (see 1.10). CLEAN requires: PR open, `mergeStateStatus` CLEAN, 0 unresolved review threads, the **latest** run of every check name green, PR head == the tip of the latest `AGENT-REPORT`. A merged PR is NOT CLEAN (the gate is for handover). The label is reported as info.
 4. Failed required job that looks flaky: re-run it (`gh run rerun <id> --failed`) and re-check; never hand over around a red required check.
 5. Findings: send them back by **resuming the same agent session** (it has the context), not a new agent. Reviewers state severity: Blocker/High block the merge; Medium/Low become follow-up tickets.
-6. Never hand a BLOCKED or unresolved PR to the owner. When the gate is CLEAN and you verified the report independently, add the label `{{AGENT_REPORT_LABEL}}`.
+6. Never hand a BLOCKED or unresolved PR to the owner. When the gate is CLEAN and you verified the report independently, add the label `{{AGENT_REPORT_LABEL}}`. The `agent-report` check rejects a label older than the newest report: after each new report remove and re-add it (`DELETE repos/{{ORG}}/<repo>/issues/<pr>/labels/{{AGENT_REPORT_LABEL}}`, then `POST repos/{{ORG}}/<repo>/issues/<pr>/labels` with only that label) and re-run the check. A red `agent-report` check caused only by a stale label is expected right after a new report: verify everything else first. Never treat a missing or quota-limited bot review as clean.
+   Branch-update commits made through the hosting UI ("update branch") need a lead-posted `AGENT-REPORT tip=<sha>` for the new tip saying what changed. A stacked PR conflicts after its base was squash-merged: merge `{{DEFAULT_BRANCH}}`, taking its version of the base parts.
 7. **After the merge**, verify `{{DEFAULT_BRANCH}}` against the reviewed tip **by content through the hosting API**, not by SHA and not only from a local clone: squash merges create new SHAs, and local clones of private repos can be stale or lack credentials. Example: `gh api repos/{{ORG}}/<repo>/compare/<reviewed-tip>...{{DEFAULT_BRANCH}} --jq '.files[].filename'` lists no PR files, or compare file contents via `gh api repos/{{ORG}}/<repo>/contents/<file>?ref=<sha>`.
-8. Write tracker/wiki updates **only after** step 7 (optionally via `ticket-tracker`).
+8. Never trust "identical" or "done": compare content (empty `git diff <branch-tip> origin/{{DEFAULT_BRANCH}} -- <PR files>`, or the blob sha per changed file via the contents API). Write tracker/wiki updates **only after** step 7 (optionally via `ticket-tracker`).
 
 ## 3. Shared index files and reserved keys
 
 - Files that many parallel PRs touch (service map, README, glossary, index pages) are listed in every dispatch as "touched by others". The lead serialises those PRs or tells agents to merge `{{DEFAULT_BRANCH}}` early and again before reporting.
 - A key the lead reserved before the ticket existed must exist in the tracker before the merge; agents never invent keys.
 - Pending decisions that cannot go into an ADR yet go into `docs/decision-log.md` plus a follow-up ticket to amend the ADR.
+
+- **Schema migrations** (agents, see their role files): applied by version number only; never edit an applied migration; the lead checks ALL open PRs for the next free number before dispatching; privileged steps are runtime guards, not migration asserts.
+- **Tracker keys and limits**: keys are looked up, never guessed (tell the lead on mismatch); check the tracker's field limits (for example summary length) when creating tickets.
+- **Review routing**: see the reviewer roles (two security reviews for auth/session/token/crypto, one for tenant data or personal data in the UI, a domain review for calculation logic, a database-security review for roles and privileged functions, a short re-check after fixes, a design review before implementation for security-sensitive designs).
 
 ## 4. Optional CI check `agent-report`
 
