@@ -19,6 +19,10 @@ Checks:
     and CI template pins actions to a commit SHA
   - generated role permissions never contain a broad shell allow; only the inspector re-asks `shell *`
     and re-appends the shell denies after it; the recipe's shell denies equal DENY_SHELL (drift check)
+  - stacks/<id>/stack.yaml schema (toolchain install commands for every OS marked yes, templates for stacks
+    without repo_type), pack conversational-start (lead overlay = core lead + marked block, commands,
+    generated bootstrap/ files current, safety rules) and the additive-only rule: every file listed in
+    scripts/baseline-0.6.4.json stays byte-identical to v0.6.4
   - no forbidden strings: built-in generic patterns (12-digit AWS account ids, ARNs, IPv4 addresses,
     GitHub tokens, Google OAuth secrets, private keys, password literals, home directory paths,
     hosted tracker sites) plus optional local regexes
@@ -33,6 +37,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from kitlib import (KIT, LEAN_AGENTS, LEAN_SKILLS, PLACEHOLDER, check_attribution, declared,  # noqa: E402
                     frontmatter, mutating_lines, parse_yaml, render_command, scan_forbidden)
+import stacks  # noqa: E402
 
 REQUIRED_FILES = [
     "core/agents/lead.md", "core/agents/explorer.md", "core/agents/ticket-tracker.md",
@@ -78,6 +83,51 @@ def text_files(root):
             yield p
 
 
+CS_FILES = ("pack.yaml", "README.md", "AGENTS.section.md", "agents/setup.md", "agents/lead.md",
+            "commands/setup.md", "commands/start-here.md", "rules/safety-model.md", "rules/setup-log-template.md",
+            "skills/stack-selection/SKILL.md", "skills/machine-setup/SKILL.md", "skills/save-work/SKILL.md",
+            "skills/explain-change/SKILL.md")
+CS_MARK = ("<!-- aiagents:conversational-start:begin -->", "<!-- aiagents:conversational-start:end -->")
+
+
+def check_conversational_start(sync):
+    pack = KIT / "packs" / "conversational-start"
+    errors = []
+    for rel in CS_FILES + ("../../stacks/README.md", "../../bootstrap/README.md", "../../bootstrap/install-commands.py"):
+        if not (pack / rel).is_file():
+            errors.append(f"packs/conversational-start/{rel}: missing")
+    if errors:
+        return errors
+    core = (KIT / "core" / "agents" / "lead.md").read_text(encoding="utf-8")
+    overlay = (pack / "agents" / "lead.md").read_text(encoding="utf-8")
+    begin, end = overlay.find(CS_MARK[0]), overlay.find(CS_MARK[1])
+    if begin < 0 or end < begin or overlay[:begin].rstrip("\n") + "\n" != core.rstrip("\n") + "\n" or overlay[end + len(CS_MARK[1]):].strip():
+        errors.append("packs/conversational-start/agents/lead.md: must be the core lead text unchanged plus one block between the "
+                      "conversational-start markers at the end (regenerate it from core/agents/lead.md)")
+    meta, _ = sync.parse(pack / "agents" / "setup.md")
+    if meta["role"] != "inspector" or "{{SETUP_LOG}}" not in meta.get("extra_permissions", ""):
+        errors.append("packs/conversational-start/agents/setup.md: must be role inspector (shell asks) editing only the setup log")
+    for cmd, needles in (("setup", ("separate yes for each install", "never ask for an administrator password", "dry-run")),
+                         ("start-here", ("one question at a time", "setup"))):
+        src = pack / "commands" / f"{cmd}.md"
+        low = src.read_text(encoding="utf-8").lower()
+        for n in needles:
+            if n not in low:
+                errors.append(f"packs/conversational-start/commands/{cmd}.md: missing rule text {n!r}")
+        try:
+            render_command(src)
+        except ValueError as err:
+            errors.append(str(err).replace(str(KIT) + "/", ""))
+    safety = (pack / "rules" / "safety-model.md").read_text(encoding="utf-8").lower()
+    for n in ("administrator", "undo", "secrets", "injection", "not a sandbox", "ios"):
+        if n not in safety:
+            errors.append(f"packs/conversational-start/rules/safety-model.md: missing {n!r}")
+    res = subprocess.run([sys.executable, str(KIT / "scripts" / "build-bootstrap.py"), "--check"], capture_output=True, text=True)
+    if res.returncode != 0:
+        errors.append("bootstrap/commands out of date: run python3 scripts/build-bootstrap.py\n" + res.stderr.strip())
+    return errors
+
+
 def main():
     errors = []
     sync = load_sync()
@@ -106,6 +156,14 @@ def main():
             if spec.get("name") != d.name:
                 errors.append(f"packs/{d.name}/pack.yaml: name must be {d.name!r}")
             scopes.append((d, core_names | declared(spec)))
+
+    pack_names = sorted(p.name for p in (KIT / "packs").iterdir() if (p / "pack.yaml").is_file())
+    for sid in stacks.stack_ids():
+        errors += stacks.validate_stack(sid, pack_names)
+        if not stacks.validate_stack(sid, pack_names):
+            scopes.append((KIT / "stacks" / sid, core_names | stacks.stack_declared(sid)))
+    errors += check_conversational_start(sync)
+    errors += [f"additive-only: {e}" for e in stacks.baseline_problems()]
 
     skills = agents = 0
     for base, _ in scopes:

@@ -1,0 +1,39 @@
+id: mobile-expo
+status: beta
+category: mobile
+title: "Phone app (React Native with Expo), beta"
+plain: "An app for iPhone and Android, previewed on your own phone with Expo Go"
+fits: [mobile-app, phone-app]
+not_for: [heavy-batch-data, desktop-app]
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: node
+    check: "node --version"
+    min: "20"
+    install:
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --scope user"
+      macos: "brew install node"
+    why: "runs and builds the project"
+    admin: false
+accounts_needed: [expo-account-optional, apple-developer-for-store, google-play-for-store]
+defaults:
+  STACK: "React Native, Expo, TypeScript strict"
+  LINT_CMD: npm run lint
+  TEST_CMD: npm test
+  INTEGRATION_CMD: npm run typecheck
+  BUILD_CMD: "npx expo export"
+  SECURITY_CMD: npm audit --audit-level=high
+run_cmd: "npx expo start"
+risks:
+  - "Beta stub: not trial-tested; only preview with Expo Go is in scope"
+  - "iOS store builds need a Mac with Xcode and an Apple developer account; Android builds need Android Studio (several GB)"
+  - "App-store accounts, fees and review rules are your decisions"

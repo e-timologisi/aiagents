@@ -1,0 +1,18 @@
+# Contributing to {{REPO_NAME}}
+
+Read `AGENTS.md` first.
+
+## Workflow
+- Work on a branch from `{{DEFAULT_BRANCH}}`; never push to `{{DEFAULT_BRANCH}}` directly.
+- No secrets, `.env` files or personal data in commits, issues, PRs or AI chats.
+
+## Commands
+```sh
+{{LINT_CMD}}
+{{INTEGRATION_CMD}}
+{{TEST_CMD}}
+{{BUILD_CMD}}
+```
+
+## Editing agents
+Edit only `agents/<name>.md`, run `python3 scripts/sync-agents.py` (`python scripts/sync-agents.py` on Windows), commit generated files.

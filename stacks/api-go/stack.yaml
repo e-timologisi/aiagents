@@ -1,0 +1,41 @@
+id: api-go
+category: api
+title: "Backend API (Go)"
+plain: "A server program other apps call; strong for business rules and databases"
+fits: [api, backend, integration, business-rules]
+not_for: [website-only, native-mobile-app]
+repo_type: backend-go
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: go
+    check: "go version"
+    min: "1.22"
+    install:
+      windows: "winget install --id GoLang.Go -e --scope user"
+      macos: "brew install go"
+    why: "builds and runs the API"
+    admin: false
+  - id: docker
+    check: "docker --version"
+    min: "24"
+    optional: true
+    install:
+      windows: "winget install --id Docker.DockerDesktop -e"
+      macos: "brew install --cask docker"
+    why: "runs database integration tests (large download, may need administrator rights)"
+    admin: true
+accounts_needed: []
+recommended_packs: []
+run_cmd: "go run ./cmd/api"
+risks:
+  - "Alias of the backend-go repo type: its Makefile commands (make test) need make; on Windows ask the setup agent for an alternative"
+  - "Integration tests need Docker, a heavy install"

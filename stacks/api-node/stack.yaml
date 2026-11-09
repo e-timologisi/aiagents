@@ -1,0 +1,39 @@
+id: api-node
+category: api
+title: "Backend API (Node.js, TypeScript)"
+plain: "A server program other apps call, written in TypeScript"
+fits: [api, backend, integration, webhook]
+not_for: [native-mobile-app, heavy-batch-data]
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: node
+    check: "node --version"
+    min: "20"
+    install:
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --scope user"
+      macos: "brew install node"
+    why: "runs and builds the project"
+    admin: false
+accounts_needed: []
+defaults:
+  STACK: "Node.js, TypeScript strict"
+  LINT_CMD: npm run lint
+  TEST_CMD: npm test
+  INTEGRATION_CMD: npm run typecheck
+  BUILD_CMD: npm run build
+  SECURITY_CMD: npm audit --audit-level=high
+  API_CONTRACT: api/openapi.yaml
+descriptions:
+  API_CONTRACT: Path of the API contract in this repo
+run_cmd: "npm run dev"
+risks:
+  - "Framework and database are decisions recorded in an ADR; the stack does not pick them"

@@ -1,0 +1,31 @@
+id: docs-hub
+category: docs
+title: "Documentation hub"
+plain: "A folder of decisions, glossary and plans, no application code"
+fits: [documentation, decisions, planning, multi-repo-hub]
+not_for: [website, api]
+repo_type: docs-hub
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: python
+    check: "python --version"
+    min: "3.10"
+    install:
+      windows: "winget install --id Python.Python.3.12 -e --scope user"
+      macos: "brew install python@3.12"
+    why: "runs the kit scripts and the project"
+    admin: false
+accounts_needed: []
+recommended_packs: []
+run_cmd: "python scripts/sync-agents.py --check"
+risks:
+  - "Documents only: nothing to run in a browser"

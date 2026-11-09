@@ -1,0 +1,32 @@
+id: web-nextjs
+category: web
+title: "Website or web app (Next.js)"
+plain: "A site people open in a browser; the good default for most web ideas"
+fits: [website, dashboard, shop, internal-tool, landing-page]
+not_for: [native-mobile-app, heavy-batch-data]
+repo_type: frontend-nextjs
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: node
+    check: "node --version"
+    min: "20"
+    install:
+      windows: "winget install --id OpenJS.NodeJS.LTS -e --scope user"
+      macos: "brew install node"
+    why: "runs and builds the project"
+    admin: false
+accounts_needed: []
+recommended_packs: []
+run_cmd: "npm run dev"
+risks:
+  - "Alias of the frontend-nextjs repo type: it expects a backend API contract; for a stand-alone site set BACKEND_REPO to your API repo or leave the placeholder text"
+  - "Hosting, domain and payments are your decisions and accounts"

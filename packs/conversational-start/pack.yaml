@@ -1,0 +1,6 @@
+name: conversational-start
+description: Start without a terminal - /setup and /start-here commands, a setup agent that installs tools only with per-item approval, a conversational lead overlay and plain-language skills (beta)
+defaults:
+  SETUP_LOG: docs/setup-log.md
+descriptions:
+  SETUP_LOG: File where the setup agent records every install with its undo command

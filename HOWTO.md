@@ -9,6 +9,15 @@ A plain-language guide for the project owner. No engineering background needed.
 4. Agents never merge code, release to production, touch servers or show passwords. You (or someone you trust) do those.
 5. Everything is written down in the project's `docs/` folder, so any new chat can pick up where the last one stopped.
 
+## Start without a terminal (beta)
+
+If you have never used a terminal: install OpenCode and sign in, then follow `bootstrap/README.md` once (it installs two chat commands). After that you only type in the chat:
+
+- `/start-here` — "What would you like to make?" The lead asks one plain question at a time, suggests a technology (a "stack") with its costs and limits, and writes down the decision.
+- `/setup` — checks your computer, asks "OK to install X?" before every single install, installs the kit into the open folder and keeps a log (`docs/setup-log.md`) with an undo command for each step.
+
+You can answer "go with your suggestion" at any time. Your work is saved with plain sentences (the `save-work` skill); you can ask to go back to an earlier save. You decide hosting, domains, payments and app-store accounts yourself; before real users, money or personal data are involved, a human expert must check the result. This path is a beta and has not been tried on clean machines yet.
+
 ## Before you start: /setup
 
 In your project folder run once `python3 ~/src/aiagents/scripts/apply-kit.py --target . --bootstrap`, open the project in OpenCode or VS Code and type `/setup`. It asks a few short questions one at a time (stack, name, which code host / tracker / wiki you use and how agents reach them), installs the lean kit and writes `.aiagents/access.md`. Answer `skip` to anything; nothing asks for passwords or tokens. Details: README "Quick start".

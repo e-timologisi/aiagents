@@ -1,0 +1,37 @@
+id: data-python
+category: data
+title: "Data notebook or pipeline (Python)"
+plain: "Scripts and notebooks that read, clean and analyse data"
+fits: [data-analysis, report, pipeline, notebook, automation-script]
+not_for: [website, native-mobile-app]
+os_support: {windows: yes, macos: yes, linux: untested}
+needs_mac: false
+toolchain:
+  - id: git
+    check: "git --version"
+    min: "2"
+    install:
+      windows: "winget install --id Git.Git -e --scope user"
+      macos: "brew install git"
+    why: "saves your work in small steps you can undo"
+    admin: false
+  - id: python
+    check: "python --version"
+    min: "3.10"
+    install:
+      windows: "winget install --id Python.Python.3.12 -e --scope user"
+      macos: "brew install python@3.12"
+    why: "runs the kit scripts and the project"
+    admin: false
+accounts_needed: []
+defaults:
+  STACK: "Python 3.12, pytest"
+  LINT_CMD: "python -m ruff check ."
+  TEST_CMD: "python -m pytest"
+  INTEGRATION_CMD: "(none)"
+  BUILD_CMD: "(none)"
+  SECURITY_CMD: "(none)"
+run_cmd: "python -m pytest"
+risks:
+  - "Personal or confidential data must not be pasted into chats; use sample data"
+  - "ruff and pytest are installed into the project environment by the developer role, not by the stack"

@@ -8,6 +8,8 @@ Usage:
   python3 scripts/apply-kit.py --target <repo dir> --update [--set KEY=VALUE ...] [--pack P] [--agent A] [--dry-run]
   python3 scripts/apply-kit.py --target <repo dir> --bootstrap [--dry-run]   # only the /setup command
   python3 scripts/apply-kit.py --target <repo dir> --detect                 # read-only guesses (JSON)
+  python3 scripts/apply-kit.py --stack <id> --target <repo dir> --set ... [--pack conversational-start ...]
+  python3 scripts/apply-kit.py --list-stacks | --stack-info <id> [--os windows|macos]   # read-only (stacks/README.md)
 
 Copies core + repo type + packs into the target (agents/, .agents/skills/, .github/,
 docs/agents/, AGENTS.md, CONTRIBUTING.md, README.md ...), substitutes {{PLACEHOLDERS}} and
@@ -31,6 +33,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from stacks import (describe, load_stack, pack_commands, stack_base, stack_ids)  # noqa: E402
 from kitlib import (KIT, LEAN_AGENTS, PLACEHOLDER, PROFILES, detect, lean_keep,  # noqa: E402
                     parse_yaml, render_command, sha256)
 
@@ -71,8 +74,8 @@ def plan_put(plan, dest, src, origin, text=None):
                   "overrides": (prev["origin"] if prev else None)}
 
 
-def agent_names(type_name, pack_names):
-    dirs = [KIT / "core" / "agents", KIT / "repo-types" / type_name / "agents"]
+def agent_names(type_name, pack_names, type_dir=None):
+    dirs = [KIT / "core" / "agents", (type_dir or KIT / "repo-types" / type_name) / "agents"]
     dirs += [KIT / "packs" / p / "agents" for p in pack_names]
     return sorted({a.stem for d in dirs if d.is_dir() for a in d.glob("*.md")})
 
@@ -89,9 +92,9 @@ def bootstrap_plan():
     return plan
 
 
-def build_plan(type_name, pack_names, standalone, type_spec, profile="full", agents=()):
+def build_plan(type_name, pack_names, standalone, type_spec, profile="full", agents=(), type_dir=None):
     plan = {}
-    core, tdir = KIT / "core", KIT / "repo-types" / type_name
+    core, tdir = KIT / "core", type_dir or KIT / "repo-types" / type_name
     pdirs = [KIT / "packs" / p for p in pack_names]
 
     add_tree(plan, core / "agents", "agents", "core")
@@ -215,7 +218,7 @@ def write_bootstrap(target, dry_run):
 def main():
     ap = argparse.ArgumentParser(description="Apply the aiagents kit to a target repository.")
     ap.add_argument("--type", choices=types())
-    ap.add_argument("--target", required=True)
+    ap.add_argument("--target")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
     ap.add_argument("--pack", action="append", default=[], choices=packs())
     ap.add_argument("--standalone", action="store_true",
@@ -225,11 +228,32 @@ def main():
                     help="full (default for new installs) or lean (core minimum + chosen packs/agents)")
     ap.add_argument("--agent", action="append", default=[], metavar="NAME",
                     help="extra agent for the lean profile (repeatable)")
+    ap.add_argument("--stack", metavar="ID", help="stack profile from stacks/ (alternative to --type)")
+    ap.add_argument("--list-stacks", action="store_true", help="print the stack catalogue and exit")
+    ap.add_argument("--stack-info", metavar="ID", help="print one stack (toolchain, limits) as JSON and exit")
+    ap.add_argument("--os", choices=("windows", "macos"), help="with --stack-info: only this OS's install commands")
     ap.add_argument("--bootstrap", action="store_true", help="install only the /setup command files")
     ap.add_argument("--detect", action="store_true", help="print read-only guesses for /setup as JSON")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    if args.list_stacks or args.stack_info:
+        try:
+            if args.list_stacks:
+                for sid in stack_ids():
+                    s = load_stack(sid)
+                    print(f"{sid}\t{s.get('status', 'stable')}\t{s.get('title')}")
+            else:
+                print(json.dumps(describe(args.stack_info, load_stack(args.stack_info), args.os), indent=2))
+        except ValueError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 2
+        return 0
+    if not args.target:
+        ap.error("--target is required")
+    if args.stack and args.type:
+        print("error: use either --type or --stack, not both", file=sys.stderr)
+        return 2
     target = pathlib.Path(args.target).resolve()
     if not target.is_dir():
         print(f"error: target {target} is not a directory", file=sys.stderr)
@@ -245,15 +269,24 @@ def main():
         print(f"error: --update needs {MANIFEST} in the target (apply the kit first)", file=sys.stderr)
         return 2
 
-    type_name = args.type or manifest.get("type")
+    stack_id = args.stack or manifest.get("stack")
+    type_dir = own_spec = None
+    if stack_id:
+        try:
+            type_name, type_dir, own_spec = stack_base(load_stack(stack_id), stack_id)
+        except ValueError as err:
+            print(f"error: {err}", file=sys.stderr)
+            return 2
+    else:
+        type_name = args.type or manifest.get("type")
     if not type_name:
-        print("error: --type is required", file=sys.stderr)
+        print("error: --type or --stack is required", file=sys.stderr)
         return 2
     pack_names = list(dict.fromkeys((manifest.get("packs") or []) + args.pack)) if args.update else args.pack
     standalone = args.standalone or bool(manifest.get("standalone"))
     profile = args.profile or manifest.get("profile") or "full"
     extra_agents = list(dict.fromkeys((manifest.get("agents") or []) + args.agent))
-    unknown = sorted(set(extra_agents) - set(agent_names(type_name, pack_names)))
+    unknown = sorted(set(extra_agents) - set(agent_names(type_name, pack_names, type_dir)))
     if unknown:
         print("error: unknown --agent: " + ", ".join(unknown), file=sys.stderr)
         return 2
@@ -266,7 +299,7 @@ def main():
         k, v = item.split("=", 1)
         cli[k.strip()] = v
 
-    type_spec = parse_yaml(KIT / "repo-types" / type_name / "type.yaml")
+    type_spec = own_spec or parse_yaml((type_dir or KIT / "repo-types" / type_name) / "type.yaml")
     specs = [parse_yaml(KIT / "core" / "placeholders.yaml"), type_spec]
     specs += [parse_yaml(KIT / "packs" / p / "pack.yaml") for p in pack_names]
     if type_spec.get("docs_hub") == "true" or standalone:
@@ -276,7 +309,9 @@ def main():
         print("error: missing required placeholders (use --set KEY=VALUE): " + ", ".join(missing), file=sys.stderr)
         return 1
 
-    plan = build_plan(type_name, pack_names, standalone, type_spec, profile, extra_agents)
+    plan = build_plan(type_name, pack_names, standalone, type_spec, profile, extra_agents, type_dir)
+    for dest, (text, origin) in pack_commands(pack_names).items():
+        plan_put(plan, dest, None, origin, text)
     rendered, unresolved = {}, []
     for dest, e in sorted(plan.items()):
         src = e["src"]
@@ -332,10 +367,13 @@ def main():
         return 0
 
     stored = {k: v for k, v in {**manifest.get("values", {}), **cli}.items()}
-    mpath.write_text(json.dumps({
+    new_manifest = {
         "kit": "aiagents", "version": kit_version(), "type": type_name, "packs": pack_names,
         "standalone": standalone, "profile": profile, "agents": extra_agents, "values": stored, "files": dict(sorted(files.items())),
-    }, indent=2) + "\n", encoding="utf-8")
+    }
+    if stack_id:  # written only with --stack; manifests made with --type stay as before
+        new_manifest["stack"] = stack_id
+    mpath.write_text(json.dumps(new_manifest, indent=2) + "\n", encoding="utf-8")
     sync = target / "scripts" / "sync-agents.py"
     for extra in ([], ["--check"]):
         res = subprocess.run([sys.executable, str(sync), "--root", str(target)] + extra,
