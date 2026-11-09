@@ -144,6 +144,9 @@ Optional CI checks live in `docs/ci-templates/`. Nothing there runs until you co
 ## Letting the lead decide on its own (autonomy policy)
 By default the lead asks you at every gate. If you want it to keep going, fill the grant table in `docs/agents/autonomy-policy.md` (who, date, scope, end). The lead then adopts its recommended answers and logs each in `docs/decision-log.md` so you can review them later. Servers, secrets, DNS, cloud accounts, production releases, repository settings and other projects are never covered. After each step, a short retro (`docs/agents/templates/retro-template.md`) turns what went wrong into rule changes.
 
+## Cost and model settings (your decisions)
+The kit keeps big-model use and reviews proportionate (`docs/agents/handover-rules.md`, "Cost and model policy"). Two settings live in your code host or AI provider, not in the kit, and only you can change them: (1) limit automatic code-review requests, for example a repository ruleset with "review on push" off and draft PRs skipped, so a review bot reviews once when a PR is marked ready; (2) set a spending budget or usage alert. The kit never changes repository settings itself.
+
 ## Resuming in a fresh chat
 Write: `@lead resume from docs/project-state.md`. The lead reads the state file (phase, gates, decisions, open questions, tickets), summarises it in five lines, checks PR statuses and continues. Keep the state file committed.
 

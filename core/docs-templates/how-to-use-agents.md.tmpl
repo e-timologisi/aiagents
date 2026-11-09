@@ -55,6 +55,10 @@ Agents follow `docs/agents/interaction-standard.md`: **one question at a time**,
 7. **Staging**: human smoke test.
 8. **Release** (owner): `release-checklist` skill first.
 
+## Cost and model policy
+
+Short form (details in `docs/agents/handover-rules.md`, section "Cost and model policy"): reviewer, architect, explorer and inspector roles run on the mid tier (`{{MODEL_REVIEWER}}`); the lead names the premium model (`{{MODEL_PREMIUM}}`) in a dispatch only for the first review/design of new authentication, session, token, cryptography, database-role/privileged-function or calculation-critical designs; implementers never ask for a bigger model; tracker and docs tidy use the cheap tier. Review tiers A (full), B (one review), C (light); at most {{MAX_PARALLEL_AGENTS}} agents in parallel (2 when quota is tight); agents open PRs as drafts and mark them ready once.
+
 ## Lessons learned
 
 **Standing rule: lessons feed the agents.** Whenever the lead or any agent learns something new or finds a better way of working (a failure mode, a gate that bit, a review finding pattern, a tooling quirk), the matching `agents/<name>.md` (and `docs/agents/*`) is updated in the same PR or a linked follow-up ticket; run `python3 scripts/sync-agents.py` and commit the generated files. Every agent's final report lists the lessons learned and which agent files were updated (or says there were none); the lead checks this at merge time. Generic lessons are worth porting back to the kit.

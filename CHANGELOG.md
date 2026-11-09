@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3 — 2026-11-10
+
+Cost and model policy, generic.
+- New placeholders `MODEL_REVIEWER` (default mid tier) and `MODEL_PREMIUM` (optional). Reviewer, architect, explorer and inspector roles (core, docs-hub, payroll and postgres packs) now use `MODEL_REVIEWER`; `MODEL_PLANNER` stays with the lead. Role text: the lead names the premium model in a dispatch only for the first review/design of new authentication, session, token, cryptography, privileged-database or calculation-critical designs; implementers never ask for a bigger model; quick-tasks uses the cheap tier.
+- `handover-rules` template: "Cost and model policy" (model tiers, review tiers A/B/C, fewer and scoped reviews, compact reports, parallel cap of `MAX_PARALLEL_AGENTS` / 2 under quota pressure, one restart on HTTP 429, draft PR process: push freely, mark ready once, at most one extra bot-driven push, report states bot status). Short form in `how-to-use-agents`; lead rule.
+- README and HOWTO: "host settings to consider" (limit automatic code-review requests, spending budget) as owner decisions the kit never changes.
+- `check-kit.py` checks the new text and placeholders and that reviewer roles default to `MODEL_REVIEWER` while the premium model is never a role default; tests added.
+
 ## 0.6.2 — 2026-11-09
 
 Process lessons from a long multi-repo project, ported generically.

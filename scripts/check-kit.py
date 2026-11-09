@@ -56,7 +56,8 @@ ONE_QUESTION_SKILLS = (
 SETUP_NEEDLES = ("one question at a time", "never ask for", "servers, databases and credentials are never",
                  ".aiagents/access.md", "--profile lean", "--detect", "local-<n>", "commit locally",
                  "handover gate", "pinned-actions guard", "autonomy policy")
-NEW_PLACEHOLDERS = ("AGENT_REPORT_LABEL", "AGENT_REPORT_AUTHORS", "MAX_PARALLEL_AGENTS", "EXPECTED_CHECKS")
+NEW_PLACEHOLDERS = ("AGENT_REPORT_LABEL", "AGENT_REPORT_AUTHORS", "MAX_PARALLEL_AGENTS", "EXPECTED_CHECKS",
+                    "MODEL_REVIEWER", "MODEL_PREMIUM")
 TYPE_FILES = ("type.yaml", "AGENTS.md.tmpl", "CONTRIBUTING.md.tmpl", "README.md.tmpl")
 
 
@@ -122,6 +123,14 @@ def main():
             agents += 1
             try:
                 meta, _ = sync.parse(a)
+                model = meta.get("model", "")
+                if meta["role"] in ("reviewer", "planner", "inspector") and model not in ("{{MODEL_REVIEWER}}", "{{MODEL_QUICK}}"):
+                    errors.append(f"{a.relative_to(KIT)}: {meta['role']} role must default to {{{{MODEL_REVIEWER}}}} (mid tier) or {{{{MODEL_QUICK}}}} (cheap tier), not {model!r}")
+                if "MODEL_PREMIUM" in model:
+                    errors.append(f"{a.relative_to(KIT)}: no role may default to the premium model")
+                text_a = a.read_text(encoding="utf-8")
+                if model == "{{MODEL_REVIEWER}}" and "ONLY for the first review/design" not in text_a:
+                    errors.append(f"{a.relative_to(KIT)}: missing the premium-model selection sentence")
                 rules = sync.role_permissions(meta["role"]) + sync.extra_rules(meta, a)
                 for problem in sync.shell_rule_problems(rules, meta["role"]):
                     errors.append(f"{a.relative_to(KIT)}: permissions: {problem}")
@@ -214,10 +223,11 @@ def main():
         for n, line in mutating_lines(gate.read_text(encoding="utf-8")):
             errors.append(f"core/scripts/handover-check.sh:{n}: must stay read-only: {line.strip()}")
     lesson_files = {
-        "core/docs-templates/how-to-use-agents.md.tmpl": ("lessons feed the agents", "Lessons learned"),
+        "core/docs-templates/how-to-use-agents.md.tmpl": ("lessons feed the agents", "Lessons learned", "Cost and model policy"),
         "core/docs-templates/AGENTS.md.tmpl": ("Lessons feed the agents", "Lessons learned are written"),
         "core/docs-templates/handover-rules.md.tmpl": ("never a clean review", "never treat a missing", "version number only",
-                                                       "update branch", "never guess"),
+                                                       "update branch", "never guess", "Cost and model policy", "Review tiers",
+                                                       "Draft PR process", "HTTP 429", "mark it ready"),
         "core/agents/developer.md": ("never a clean review", "ALL open PRs", "never edit an applied migration"),
         "core/agents/security-reviewer.md": ("did NOT read or run", "two security reviews"),
     }

@@ -55,7 +55,24 @@ Rules for the lead and every implementer agent in {{PROJECT_NAME}}. They close p
 
 **Honest limit:** agents and the lead may share one account. The gate enforces the **process** (report → independent check → label → nothing pushed since), not **identity**. Making `agent-report` a required check is the project owner's decision, after it has proved itself on real PRs.
 
-## 5. Git and hosting access
+## 5. Cost and model policy
+
+Reviews and big models are the main cost. Keep them proportionate.
+
+**Model tiers.** Reviewer, architect, explorer and inspector roles default to the mid-tier model (`{{MODEL_REVIEWER}}`). The lead selects the premium model (`{{MODEL_PREMIUM}}`) explicitly in the dispatch ONLY for the first review/design of new authentication, session, token, cryptography, database-role/privileged-function or calculation-critical designs; short re-checks, second passes on ordinary changes, UI/docs reviews and ADR revision rounds use the default. Implementers never ask for a bigger model. Tracker and docs tidy use the cheap tier (`{{MODEL_QUICK}}`).
+
+**Review tiers.**
+- **A (full)**: new authentication, session, token or cryptography; privileged database roles/functions; calculation-critical logic. Premium first review, then a short re-check of the earlier findings on the default model.
+- **B (one review)**: ordinary data or grants changes, endpoints, migrations: one security review (default model); domain review only for domain logic; database-security review only for roles, privileged functions, guards or restore.
+- **C (light)**: UI, docs, tests, tooling: no separate security review unless the checklist triggers; CI and the review bot suffice.
+
+**Fewer reviews.** Two security reviews only for auth/session/token/crypto; re-checks are scoped to the earlier findings, not a fresh full pass; design reviews before implementation only for security-sensitive designs; reports stay compact (under ~80 lines).
+
+**Parallel cap and quota.** At most {{MAX_PARALLEL_AGENTS}} agents at once (2 when the provider quota is tight). On an HTTP 429: wait, restart the agent once, and tell the owner if it repeats.
+
+**Draft PR process.** Agents open PRs as **drafts** and push freely: CI runs on drafts, while review bots typically skip drafts. With "review on push" disabled in the host's rulesets, the bot reviews when the PR is marked ready. Mark it ready **exactly once** when the tip is final and CI is green; at most one extra bot-driven push afterwards. The report states whether the bot reviewed the ready tip or quotes the quota message; absent is not clean (see 1.7).
+
+## 6. Git and hosting access
 
 - SSH without a key: use HTTPS with the CLI credential helper, e.g. `git -c credential.helper='!gh auth git-credential' fetch https://<host>/{{ORG}}/<repo>.git`, or the hosting API. Never paste tokens into commands, files or chat.
 - GraphQL calls can be flaky: retry once, prefer REST where it exists.
