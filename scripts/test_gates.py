@@ -279,6 +279,48 @@ class RolePermissionsTest(unittest.TestCase):
             self.assertIn(f'"resource": "{deny}", "effect": "deny"', text)
 
 
+class CostPolicyTest(unittest.TestCase):
+    spec = importlib.util.spec_from_file_location("sync_agents2", CORE / "scripts" / "sync-agents.py")
+    sync = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sync)
+
+    def sources(self):
+        return [p for base in [CORE, *kitlib.KIT.glob("repo-types/*"), *kitlib.KIT.glob("packs/*")]
+                for p in sorted((base / "agents").glob("*.md"))]
+
+    def test_reviewer_roles_default_to_mid_tier_and_none_to_premium(self):
+        seen = 0
+        for p in self.sources():
+            meta, body = self.sync.parse(p)
+            self.assertNotIn("MODEL_PREMIUM", meta.get("model", ""), p.name)
+            if meta["role"] in ("reviewer", "planner", "inspector"):
+                if meta["model"] == "{{MODEL_QUICK}}":  # tracker role: cheap tier
+                    continue
+                seen += 1
+                self.assertEqual(meta["model"], "{{MODEL_REVIEWER}}", str(p))
+                self.assertIn("ONLY for the first review/design", body)
+        self.assertGreaterEqual(seen, 8)
+
+    def test_placeholder_defaults_are_distinct_tiers(self):
+        d = kitlib.parse_yaml(CORE / "placeholders.yaml")["defaults"]
+        self.assertNotEqual(d["MODEL_REVIEWER"], d["MODEL_PREMIUM"])
+        self.assertEqual(d["MODEL_REVIEWER"], d["MODEL_IMPLEMENTER"])
+
+    def test_installed_reviewer_gets_mid_tier_model(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d) / "repo"
+            root.mkdir()
+            res = subprocess.run([sys.executable, str(kitlib.KIT / "scripts" / "apply-kit.py"), "--target", str(root),
+                                  "--type", "backend-go", "--set", "PROJECT_NAME=Smoke", "--set", "ORG=example",
+                                  "--set", "DOCS_REPO=smoke-docs", "--set", "MODEL_REVIEWER=prov/mid",
+                                  "--set", "MODEL_PREMIUM=prov/top"], capture_output=True, text=True)
+            self.assertEqual(res.returncode, 0, res.stdout + res.stderr)
+            out = (root / ".opencode/agents/security-reviewer.md").read_text(encoding="utf-8")
+            self.assertIn("model: prov/mid", out)
+            self.assertNotIn("model: prov/top", out)
+            self.assertIn("prov/top", (root / "agents/security-reviewer.md").read_text(encoding="utf-8"))
+
+
 class InstallWiringTest(unittest.TestCase):
     def test_lean_installs_gates_as_opt_in_copies(self):
         with tempfile.TemporaryDirectory() as d:
