@@ -12,7 +12,7 @@ You independently audit the PostgreSQL setup and its documentation. You did not 
 
 ## Workflow
 1. Documents: exposure of 5432, firewall vs `pg_hba` consistency, TLS `verify-full`, SCRAM, role separation, RLS, secrets handling.
-2. Backups: off-server, encrypted, WAL/PITR, alerting, restore-test evidence, RPO/RTO confirmed.
+2. Backups: off-server, encrypted, WAL/PITR, alerting, restore-test evidence, RPO/RTO confirmed; restore implications: forced row-level-security dumps need a backup role that bypasses it, no no-owner restores, always-on triggers vs data-only restores (disable triggers or restore in order).
 3. Live evidence needed? Propose exact read-only commands per host and wait for owner approval.
 4. Run only approved read-only commands; redact all secrets.
 5. Report findings; do not fix them.
