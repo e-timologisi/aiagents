@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.4 — 2026-11-11
+
+- **Lead model default moved from the premium to the mid tier**: `MODEL_PLANNER` now defaults to the same model as `MODEL_REVIEWER`; the premium model stays an explicit choice (`MODEL_PREMIUM`). Reversible with one placeholder (`--set MODEL_PLANNER=<premium model>`). `check-kit.py` and tests enforce the defaults.
+- Lessons ported generically: implementers (linters with every CI build tag; database-code rules: nullable CHECK comparisons, validate before INSERT, fixed-string errors, real clock for expiry, no deferred-trigger dedupe via settings, fixtures for new global guards, fail-closed trigger note, caller-set timeouts tested for cancellation, no untested safety claims, local database shim, split very large tickets, late bot reviews, re-request without response reported as missing); reviewers (reproducibility checks, restore implications); lead (tracker keys never from memory, field limits, label refresh, retarget stacked PRs, applied migrations immutable, runtime guards not asserts, verify by content, ruleset changes owner-authorised and backed up). Merged into existing bullets of the role, `handover-rules` and `how-to-use-agents` templates; `check-kit.py` checks them.
+
 ## 0.6.3 — 2026-11-10
 
 Cost and model policy, generic.

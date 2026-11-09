@@ -15,7 +15,7 @@ Checks:
   - third-party attribution: every directory with UPSTREAM.md has LICENSE.upstream and is listed in
     THIRD-PARTY-NOTICES.md, which reproduces every upstream MIT license in full
   - process gates: handover-rules/autonomy/decision-log/retro templates, CI templates and scripts exist;
-    new placeholders are used; handover-check.sh contains no mutating gh/git command; every workflow
+    new placeholders are used; the lead's MODEL_PLANNER default equals the mid tier (MODEL_REVIEWER) and differs from MODEL_PREMIUM; handover-check.sh contains no mutating gh/git command; every workflow
     and CI template pins actions to a commit SHA
   - generated role permissions never contain a broad shell allow; only the inspector re-asks `shell *`
     and re-appends the shell denies after it; the recipe's shell denies equal DENY_SHELL (drift check)
@@ -218,6 +218,11 @@ def main():
     if recipe_denies != list(sync.DENY_SHELL):
         errors.append("autonomy-policy.md.tmpl: shell deny rules of the recipe drift from DENY_SHELL in "
                       "core/scripts/sync-agents.py (keep both equal, same order)")
+    model_defaults = parse_yaml(KIT / "core" / "placeholders.yaml").get("defaults", {})
+    if model_defaults.get("MODEL_PLANNER") != model_defaults.get("MODEL_REVIEWER"):
+        errors.append("core/placeholders.yaml: MODEL_PLANNER (lead) must default to the mid tier (same as MODEL_REVIEWER)")
+    if model_defaults.get("MODEL_PREMIUM") in (model_defaults.get("MODEL_PLANNER"), model_defaults.get("MODEL_REVIEWER")):
+        errors.append("core/placeholders.yaml: MODEL_PREMIUM must differ from the mid-tier defaults")
     gate = KIT / "core" / "scripts" / "handover-check.sh"
     if gate.exists():
         for n, line in mutating_lines(gate.read_text(encoding="utf-8")):
@@ -227,8 +232,13 @@ def main():
         "core/docs-templates/AGENTS.md.tmpl": ("Lessons feed the agents", "Lessons learned are written"),
         "core/docs-templates/handover-rules.md.tmpl": ("never a clean review", "never treat a missing", "version number only",
                                                        "update branch", "never guess", "Cost and model policy", "Review tiers",
-                                                       "Draft PR process", "HTTP 429", "mark it ready"),
+                                                       "Draft PR process", "HTTP 429", "mark it ready",
+                                                       "re-requested, no response", "EARLIER commit", "Lead habits"),
         "core/agents/developer.md": ("never a clean review", "ALL open PRs", "never edit an applied migration"),
+        "core/agents/lead.md": ("never type a tracker key", "owner-authorised only"),
+        "repo-types/backend-go/agents/developer.md": ("COALESCE", "TEST cancellation", "every build tag", "two tickets/PRs"),
+        "core/agents/domain-reviewer.md": ("canonical serialization",),
+        "packs/postgres-infra/agents/postgres-security-reviewer.md": ("restore implications",),
         "core/agents/security-reviewer.md": ("did NOT read or run", "two security reviews"),
     }
     for rel, needles in lesson_files.items():

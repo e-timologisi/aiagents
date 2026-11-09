@@ -305,6 +305,8 @@ class CostPolicyTest(unittest.TestCase):
         d = kitlib.parse_yaml(CORE / "placeholders.yaml")["defaults"]
         self.assertNotEqual(d["MODEL_REVIEWER"], d["MODEL_PREMIUM"])
         self.assertEqual(d["MODEL_REVIEWER"], d["MODEL_IMPLEMENTER"])
+        self.assertEqual(d["MODEL_PLANNER"], d["MODEL_REVIEWER"])  # the lead defaults to the mid tier
+        self.assertNotEqual(d["MODEL_PLANNER"], d["MODEL_PREMIUM"])
 
     def test_installed_reviewer_gets_mid_tier_model(self):
         with tempfile.TemporaryDirectory() as d:

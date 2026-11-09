@@ -42,7 +42,7 @@ defaults:
   AGENT_REPORT_AUTHORS: collaborators
   MAX_PARALLEL_AGENTS: "3"
   EXPECTED_CHECKS: "(list the required check names, e.g. lint, test)"
-  MODEL_PLANNER: github-copilot/claude-opus-5.5
+  MODEL_PLANNER: github-copilot/claude-sonnet-5.5
   MODEL_REVIEWER: github-copilot/claude-sonnet-5.5
   MODEL_PREMIUM: github-copilot/claude-opus-5.5
   MODEL_IMPLEMENTER: github-copilot/claude-sonnet-5.5
@@ -86,7 +86,7 @@ descriptions:
   AGENT_REPORT_AUTHORS: "Who may post AGENT-REPORT comments: collaborators (owner/member/collaborator association) or a comma-separated list of logins"
   EXPECTED_CHECKS: Check names every PR must show before the lead waits for results (no checks yet = pending)
   MAX_PARALLEL_AGENTS: Most agents the lead runs at once under the autonomy policy
-  MODEL_PLANNER: OpenCode model for the lead (planner tier)
+  MODEL_PLANNER: OpenCode model for the lead (default: mid tier; set it to the MODEL_PREMIUM value to move the lead to the premium tier)
   MODEL_REVIEWER: OpenCode model for reviewer, architect, explorer and inspector roles (default: mid tier)
   MODEL_PREMIUM: Premium model the lead names explicitly in a dispatch for the few designs that need it (optional; no role uses it by default)
   MODEL_IMPLEMENTER: OpenCode model for implementers

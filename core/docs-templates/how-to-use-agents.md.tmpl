@@ -67,7 +67,10 @@ Short form (details in `docs/agents/handover-rules.md`, section "Cost and model 
 - **Label refresh**: after each new `AGENT-REPORT`, remove and re-add the label; branch-update commits need a lead-posted report.
 - **Migrations**: version-number-only runners; never edit an applied migration; check all open PRs for the next number; privileged steps are runtime guards.
 - **Stacked PRs** conflict after the base is squash-merged: merge the default branch, taking its version of the base parts.
-- **Tracker**: keys are looked up not guessed; check field limits; one follow-up ticket per deferred finding.
+- **Tracker**: keys are looked up not guessed (the lead never types one from memory); check field limits (short summaries, details in the description); one follow-up ticket per deferred finding.
+- **Implementer rules**: linters run with every CI build tag; database code (nullable CHECKs, fixed-string validation errors, real clock for expiry, caller-set timeouts tested for cancellation, shim for machines without containers, split very large tickets): see the developer role.
+- **Late bot reviews**: a review can land on an earlier commit; re-check threads before reporting and at merge; a re-request with no response after ~6 minutes is reported as missing.
+- **Reviewers**: domain reviewers check reproducibility (canonical serialization, hash scopes, frozen inputs); database reviewers check restore implications; compact reports; premium model only by the lead's choice for first design reviews.
 - **Interruptions**: provider quota stops agents; small early commits and pushes lose little.
 - **Review routing and honesty**: see the reviewer roles; reviewers state what they did not read or run.
 - **Verify before writing the tracker**: compare the default branch by content, not by "done".
