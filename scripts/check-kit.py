@@ -213,6 +213,19 @@ def main():
     if gate.exists():
         for n, line in mutating_lines(gate.read_text(encoding="utf-8")):
             errors.append(f"core/scripts/handover-check.sh:{n}: must stay read-only: {line.strip()}")
+    lesson_files = {
+        "core/docs-templates/how-to-use-agents.md.tmpl": ("lessons feed the agents", "Lessons learned"),
+        "core/docs-templates/AGENTS.md.tmpl": ("Lessons feed the agents", "Lessons learned are written"),
+        "core/docs-templates/handover-rules.md.tmpl": ("never a clean review", "never treat a missing", "version number only",
+                                                       "update branch", "never guess"),
+        "core/agents/developer.md": ("never a clean review", "ALL open PRs", "never edit an applied migration"),
+        "core/agents/security-reviewer.md": ("did NOT read or run", "two security reviews"),
+    }
+    for rel, needles in lesson_files.items():
+        low = (KIT / rel).read_text(encoding="utf-8").lower()
+        for needle in needles:
+            if needle.lower() not in low:
+                errors.append(f"{rel}: missing lesson text {needle!r}")
     ci_rules = (("agent-report.yml.tmpl", ("name: agent-report", "AGENT-REPORT tip=", "rerun-on-report",
                                            "permissions: {}", "NOT a required check")),
                 ("pinned-actions.yml.tmpl", ("name: pinned-actions", "check-pinned-actions.py")),

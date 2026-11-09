@@ -55,6 +55,19 @@ Agents follow `docs/agents/interaction-standard.md`: **one question at a time**,
 7. **Staging**: human smoke test.
 8. **Release** (owner): `release-checklist` skill first.
 
+## Lessons learned
+
+**Standing rule: lessons feed the agents.** Whenever the lead or any agent learns something new or finds a better way of working (a failure mode, a gate that bit, a review finding pattern, a tooling quirk), the matching `agents/<name>.md` (and `docs/agents/*`) is updated in the same PR or a linked follow-up ticket; run `python3 scripts/sync-agents.py` and commit the generated files. Every agent's final report lists the lessons learned and which agent files were updated (or says there were none); the lead checks this at merge time. Generic lessons are worth porting back to the kit.
+
+- **Review bots**: report only when the final tip has a bot review (or a quoted quota message); missing or quota-limited is never clean; batch fixes; at most one extra bot-driven push.
+- **Label refresh**: after each new `AGENT-REPORT`, remove and re-add the label; branch-update commits need a lead-posted report.
+- **Migrations**: version-number-only runners; never edit an applied migration; check all open PRs for the next number; privileged steps are runtime guards.
+- **Stacked PRs** conflict after the base is squash-merged: merge the default branch, taking its version of the base parts.
+- **Tracker**: keys are looked up not guessed; check field limits; one follow-up ticket per deferred finding.
+- **Interruptions**: provider quota stops agents; small early commits and pushes lose little.
+- **Review routing and honesty**: see the reviewer roles; reviewers state what they did not read or run.
+- **Verify before writing the tracker**: compare the default branch by content, not by "done".
+
 ## Parallel work and missing access
 See `docs/agents/access-and-conflicts.md`: files per agent are listed before parallel work, merge order is stated, open PRs are re-checked after every merge, and `main` is verified by content. Agents check what they can reach once, say so plainly, and fall back to `docs/work-log.md` (`LOCAL-<n>` keys) when there is no ticket system.
 

@@ -29,6 +29,7 @@ You are a senior engineer on {{PROJECT_NAME}}. Respect the repo boundaries in th
 - Which repo owns what, interfaces, routing table and change order: `{{DOCS_REPO}}/docs/architecture/service-map.md`.
 - Agents and skills cheat sheet: `docs/agents/how-to-use-agents.md`.
 - Parallel agents, merge order and working without ticket/code-host/server access: `docs/agents/access-and-conflicts.md`.
+- Lessons feed the agents: new lessons go into `agents/<name>.md` and `docs/agents/*` (standing rule in `docs/agents/how-to-use-agents.md`, "Lessons learned").
 - Vague request → `task-intake` skill; multi-repo ticket → `cross-repo-feature` skill. Skills live in `.agents/skills/` (read by OpenCode and VS Code Copilot).
 - Ticket readiness and labels: `docs/agents/ticket-standard.md`; issue forms in `.github/ISSUE_TEMPLATE/`.
 - Agents: single source in `agents/<name>.md`; run `python3 scripts/sync-agents.py` to generate `.opencode/agents/` and `.github/agents/` and commit both. Never edit generated files; CI runs `--check`.
@@ -42,5 +43,6 @@ Work is not finished until the documentation matches it. In the same PR (or a li
 - Record any architectural or cross-repo decision as an ADR in `{{DOCS_REPO}}/docs/adr/`; update an existing ADR's status if superseded.
 - Update `{{DOCS_REPO}}` when infrastructure, deployment, security, data access or release flow change.
 - Add or correct terms in `{{DOCS_REPO}}/GLOSSARY.md` when new domain terms appear.
+- Lessons learned are written into the agent definitions (see `docs/agents/how-to-use-agents.md`, "Lessons learned").
 - Comment on the related GitHub issue (what changed, links, follow-ups); open new issues for deferred work instead of leaving TODOs.
 - The final report of every agent lists which docs were updated, or states why none were needed.
